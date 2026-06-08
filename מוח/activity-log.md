@@ -11,3 +11,4 @@
 - הגדרת Stop hook ב-`.claude/settings.json` לאוטו-פוש לגיטהב בכל סיום סשן
 - יצירת סקריפט `.claude/git-autopush.ps1`
 ## 2026-06-08 — סרקתי קוד קיים, נוצר crm-spec.json עם ניתוח done/missing לכל מודול
+## 2026-06-08 — pipeline: ריבה(SQL) + בן(3 דפים חדשים + dashboard + sidebar) + יואב(QA) + 2 commits pushed
