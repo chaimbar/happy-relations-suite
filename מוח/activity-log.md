@@ -12,3 +12,4 @@
 - יצירת סקריפט `.claude/git-autopush.ps1`
 ## 2026-06-08 — סרקתי קוד קיים, נוצר crm-spec.json עם ניתוח done/missing לכל מודול
 ## 2026-06-08 — pipeline: ריבה(SQL) + בן(3 דפים חדשים + dashboard + sidebar) + יואב(QA) + 2 commits pushed
+2026-06-08 — פרסום מלא ל-Lovable + Update לפרודקשן. 3 מסכים חדשים: שיבוץ יומי, תשלומים, רווחיות. האתר חי: himelech.crmbizflow.online
