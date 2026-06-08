@@ -6,3 +6,4 @@
 2026-06-08 — employees tab: full rebuild — KPI strip (4 cards), filter pills, CSV export, detail Sheet with 3 tabs (פרטים/שיבוצים/שכר), salary add/delete, assignment history with totals
 
 2026-06-08 — employees.tsx: שדרוג מקיף — תיקון 9 באגים קריטיים (שמות עמודות/טבלאות), performance (useMemo/useCallback/memo), 3 custom hooks, sort+view-toggle, job_title/employment_type/start_date, salary is_paid
+2026-06-08 — UX Audit טאב עובדים: תיקון נגישות מובייל (כפתורי עריכה/מחיקה), נקה סינון בפילטרים ו-empty state, ספירת תוצאות, timewatch_employee_id בטופס ובפרטים, אישור לפני מחיקת שכר, הסרת 'לחץ לפרטים' מכרטיסייה
