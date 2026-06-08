@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -18,6 +19,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   component: ClientsPage,
@@ -31,6 +35,27 @@ type Client = {
   address: string | null;
   notes: string | null;
 };
+
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-violet-100 text-violet-700",
+  "bg-amber-100 text-amber-700",
+  "bg-rose-100 text-rose-700",
+  "bg-cyan-100 text-cyan-700",
+];
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 function ClientsPage() {
   const qc = useQueryClient();
@@ -65,76 +90,244 @@ function ClientsPage() {
     [c.name, c.phone, c.email].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const isFiltering = search.trim().length > 0;
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <p className="text-sm text-muted-foreground">{clients.length} לקוחות במערכת</p>
-        <div className="flex gap-2">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="חיפוש..." value={search} onChange={(e) => setSearch(e.target.value)} className="ps-3 pe-9" />
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">לקוחות</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {isLoading
+                ? "טוען..."
+                : isFiltering
+                ? `מציג ${filtered.length} מתוך ${clients.length} לקוחות`
+                : `${clients.length} לקוחות במערכת`}
+            </p>
           </div>
+          <div className="flex gap-2">
+            <div className="relative flex-1 sm:w-72">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="חפש לפי שם, טלפון או אימייל..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="ps-3 pe-9"
+                aria-label="חיפוש לקוחות"
+              />
+            </div>
+            {isManager && (
+              <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }}>
+                <DialogTrigger asChild>
+                  <Button className="shrink-0">
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">לקוח חדש</span>
+                    <span className="sm:hidden">חדש</span>
+                  </Button>
+                </DialogTrigger>
+                <ClientDialog editing={editing} onClose={() => { setDialogOpen(false); setEditing(null); }} />
+              </Dialog>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-5 w-36" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-44" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center text-center py-16 gap-4">
+              <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
+                <Users className="h-7 w-7 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium">
+                  {isFiltering ? "לא נמצאו לקוחות תואמים" : "עדיין אין לקוחות"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {isFiltering
+                    ? `לא נמצאו תוצאות עבור "${search}"`
+                    : "הוסף את הלקוח הראשון שלך כדי להתחיל"}
+                </p>
+              </div>
+              {!isFiltering && isManager && (
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="h-4 w-4" /> הוסף לקוח ראשון
+                </Button>
+              )}
+              {isFiltering && (
+                <Button variant="outline" onClick={() => setSearch("")}>
+                  נקה חיפוש
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((c) => (
+              <ClientCard
+                key={c.id}
+                client={c}
+                isManager={isManager}
+                isAdmin={isAdmin}
+                onEdit={() => { setEditing(c); setDialogOpen(true); }}
+                onDelete={() => deleteM.mutate(c.id)}
+                isDeleting={deleteM.isPending}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
+  );
+}
+
+function ClientCard({
+  client: c,
+  isManager,
+  isAdmin,
+  onEdit,
+  onDelete,
+  isDeleting,
+}: {
+  client: Client;
+  isManager: boolean;
+  isAdmin: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const hasContact = c.phone || c.email || c.address;
+  const avatarColor = getAvatarColor(c.name);
+
+  return (
+    <Card className="hover:shadow-md transition-shadow group">
+      <CardContent className="p-5">
+        {/* Card Header: Avatar + Name + Actions */}
+        <div className="flex items-start justify-between gap-2 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${avatarColor}`}
+              aria-hidden="true"
+            >
+              {getInitials(c.name)}
+            </div>
+            <h3 className="font-semibold text-base truncate leading-tight">{c.name}</h3>
+          </div>
+
           {isManager && (
-            <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }}>
-              <DialogTrigger asChild>
-                <Button><Plus className="h-4 w-4" /> לקוח חדש</Button>
-              </DialogTrigger>
-              <ClientDialog editing={editing} onClose={() => { setDialogOpen(false); setEditing(null); }} />
-            </Dialog>
+            <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={onEdit}
+                    aria-label={`ערוך את ${c.name}`}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>עריכה</TooltipContent>
+              </Tooltip>
+
+              {isAdmin && (
+                <AlertDialog>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label={`מחק את ${c.name}`}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>מחיקה</TooltipContent>
+                  </Tooltip>
+                  <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>למחוק את {c.name}?</AlertDialogTitle>
+                      <AlertDialogDescription>פעולה זו אינה ניתנת לביטול.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>ביטול</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={onDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        מחק
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           )}
         </div>
-      </div>
 
-      {isLoading ? (
-        <div className="text-center text-muted-foreground py-12">טוען...</div>
-      ) : filtered.length === 0 ? (
-        <Card><CardContent className="text-center py-12">
-          <p className="text-muted-foreground">לא נמצאו לקוחות</p>
-          {isManager && <Button className="mt-4" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4" /> הוסף לקוח ראשון</Button>}
-        </CardContent></Card>
-      ) : (
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((c) => (
-            <Card key={c.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <h3 className="font-display font-semibold text-base truncate">{c.name}</h3>
-                  {isManager && (
-                    <div className="flex gap-1 shrink-0">
-                      <Button size="icon" variant="ghost" onClick={() => { setEditing(c); setDialogOpen(true); }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      {isAdmin && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent dir="rtl">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>למחוק את {c.name}?</AlertDialogTitle>
-                              <AlertDialogDescription>פעולה זו אינה ניתנת לביטול.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>ביטול</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteM.mutate(c.id)}>מחק</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1.5 text-sm text-muted-foreground">
-                  {c.phone && <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /><span dir="ltr">{c.phone}</span></div>}
-                  {c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /><span dir="ltr" className="truncate">{c.email}</span></div>}
-                  {c.address && <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /><span className="truncate">{c.address}</span></div>}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+        {/* Contact Info */}
+        {hasContact ? (
+          <div className="space-y-1.5 text-sm text-muted-foreground">
+            {c.phone && (
+              <a
+                href={`tel:${c.phone}`}
+                className="flex items-center gap-2 hover:text-foreground transition-colors w-fit"
+                dir="ltr"
+              >
+                <Phone className="h-3.5 w-3.5 shrink-0" />
+                <span>{c.phone}</span>
+              </a>
+            )}
+            {c.email && (
+              <a
+                href={`mailto:${c.email}`}
+                className="flex items-center gap-2 hover:text-foreground transition-colors min-w-0"
+                dir="ltr"
+              >
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{c.email}</span>
+              </a>
+            )}
+            {c.address && (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{c.address}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground italic">ללא פרטי קשר</p>
+        )}
+
+        {/* Notes preview */}
+        {c.notes && (
+          <p className="mt-3 text-xs text-muted-foreground line-clamp-2 border-t pt-2">{c.notes}</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -147,6 +340,16 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
     address: editing?.address ?? "",
     notes: editing?.notes ?? "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const next: Record<string, string> = {};
+    if (!form.name.trim()) next.name = "שם הוא שדה חובה";
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      next.email = "כתובת אימייל לא תקינה";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const saveM = useMutation({
     mutationFn: async () => {
@@ -174,39 +377,86 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
     onError: (e: Error) => toast.error("שמירה נכשלה", { description: e.message }),
   });
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validate()) saveM.mutate();
+  };
+
   return (
     <DialogContent dir="rtl" className="max-w-lg">
       <DialogHeader>
         <DialogTitle>{editing ? "עריכת לקוח" : "לקוח חדש"}</DialogTitle>
         <DialogDescription>פרטי קשר של הלקוח / הקבלן</DialogDescription>
       </DialogHeader>
-      <form onSubmit={(e) => { e.preventDefault(); saveM.mutate(); }} className="space-y-4">
-        <div className="space-y-2">
-          <Label>שם *</Label>
-          <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="client-name">
+            שם <span className="text-destructive" aria-hidden="true">*</span>
+          </Label>
+          <Input
+            id="client-name"
+            value={form.name}
+            onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? "name-error" : undefined}
+          />
+          {errors.name && <p id="name-error" className="text-xs text-destructive">{errors.name}</p>}
         </div>
+
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label>טלפון</Label>
-            <Input dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <div className="space-y-1.5">
+            <Label htmlFor="client-phone">טלפון</Label>
+            <Input
+              id="client-phone"
+              dir="ltr"
+              type="tel"
+              placeholder="050-0000000"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
           </div>
-          <div className="space-y-2">
-            <Label>אימייל</Label>
-            <Input dir="ltr" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <div className="space-y-1.5">
+            <Label htmlFor="client-email">אימייל</Label>
+            <Input
+              id="client-email"
+              dir="ltr"
+              type="email"
+              placeholder="name@example.com"
+              value={form.email}
+              onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: "" }); }}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+            />
+            {errors.email && <p id="email-error" className="text-xs text-destructive col-span-2">{errors.email}</p>}
           </div>
         </div>
-        <div className="space-y-2">
-          <Label>כתובת</Label>
-          <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="client-address">כתובת</Label>
+          <Input
+            id="client-address"
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+          />
         </div>
-        <div className="space-y-2">
-          <Label>הערות</Label>
-          <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="client-notes">הערות</Label>
+          <Textarea
+            id="client-notes"
+            rows={3}
+            placeholder="פרטים נוספים על הלקוח..."
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          />
         </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>ביטול</Button>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button type="button" variant="outline" onClick={onClose} disabled={saveM.isPending}>
+            ביטול
+          </Button>
           <Button type="submit" disabled={saveM.isPending}>
-            {saveM.isPending ? "שומר..." : editing ? "עדכן" : "הוסף"}
+            {saveM.isPending ? "שומר..." : editing ? "עדכן לקוח" : "הוסף לקוח"}
           </Button>
         </DialogFooter>
       </form>
