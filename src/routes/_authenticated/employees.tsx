@@ -399,8 +399,9 @@ function EmployeesPage() {
           <button
             onClick={handleExport}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm hover:bg-muted transition-colors"
+            title="ייצוא לקובץ CSV"
           >
-            <FileSpreadsheet className="h-4 w-4" /> Excel
+            <FileSpreadsheet className="h-4 w-4" /> ייצוא CSV
           </button>
           {isManager && (
             <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) closeDialog(); else setDialogOpen(true); }}>
@@ -881,7 +882,12 @@ const DeleteButton = memo(function DeleteButton({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>ביטול</AlertDialogCancel>
-          <AlertDialogAction onClick={() => onDelete(id)}>מחק</AlertDialogAction>
+          <AlertDialogAction
+            onClick={() => onDelete(id)}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            מחק
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -970,10 +976,10 @@ function EmployeeDetailsTab({ emp }: { emp: Employee }) {
   const estimatedMonthly = emp.monthly_cost_actual ?? emp.daily_cost_estimated * 22;
   const sen = calcSeniority(emp.start_date);
 
-  const rows: { label: string; value?: string | null; dir?: "ltr"; note?: string }[] = [
+  const rows: { label: string; value?: string | null; dir?: "ltr"; note?: string; href?: string }[] = [
     { label: "תפקיד",               value: emp.job_title },
     { label: "סוג העסקה",           value: emp.employment_type },
-    { label: "טלפון",               value: emp.phone, dir: "ltr" },
+    { label: "טלפון",               value: emp.phone, dir: "ltr", href: emp.phone ? `tel:${emp.phone}` : undefined },
     { label: 'ת"ז / מזהה',         value: emp.id_number },
     { label: "סטטוס",               value: emp.status === "active" ? "פעיל" : "לא פעיל" },
     {
@@ -998,12 +1004,15 @@ function EmployeeDetailsTab({ emp }: { emp: Employee }) {
 
   return (
     <div className="space-y-0">
-      {rows.map(({ label, value, dir, note }) =>
+      {rows.map(({ label, value, dir, note, href }) =>
         value ? (
           <div key={label} className="flex justify-between items-start py-3 border-b border-border/40 last:border-0">
             <span className="text-sm text-muted-foreground">{label}</span>
             <div className="text-start">
-              <span className="text-sm font-medium" dir={dir}>{value}</span>
+              {href
+                ? <a href={href} className="text-sm font-medium hover:text-primary hover:underline transition-colors" dir={dir}>{value}</a>
+                : <span className="text-sm font-medium" dir={dir}>{value}</span>
+              }
               {note && <p className="text-xs text-muted-foreground mt-0.5">{note}</p>}
             </div>
           </div>
