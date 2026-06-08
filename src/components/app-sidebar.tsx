@@ -34,9 +34,9 @@ const mainItems = [
 ];
 
 const futureItems = [
-  { title: "שיבוץ יומי", url: "/scheduling", icon: Calendar },
-  { title: "תשלומים", url: "/payments", icon: Wallet },
-  { title: "רווחיות", url: "/profitability", icon: TrendingUp },
+  { title: "שיבוץ יומי", url: "/scheduling" as const, icon: Calendar },
+  { title: "תשלומים", url: "/payments" as const, icon: Wallet },
+  { title: "רווחיות", url: "/profitability" as const, icon: TrendingUp },
 ];
 
 export function AppSidebar() {

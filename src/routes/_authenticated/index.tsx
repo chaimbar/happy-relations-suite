@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Building2, UserCog, TrendingUp, Wallet, AlertTriangle, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { he } from "date-fns/locale";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,7 +87,7 @@ function Dashboard() {
       <div>
         <h2 className="font-display text-2xl font-bold">דשבורד</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {format(new Date(), "EEEE, d MMMM yyyy")}
+          {format(new Date(), "EEEE, d MMMM yyyy", { locale: he })}
         </p>
       </div>
 
@@ -249,7 +250,7 @@ function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {recentProjects.map((p) => {
-                  const profit = Number(p.total_price) - Number(p.materials_cost);
+                  const profit = Number(p.total_price) - Number(p.materials_cost); // רווח גס — ללא עלות עובדים (לפרטים ← רווחיות)
                   return (
                     <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/40">
                       <span className="font-medium text-sm truncate flex-1 me-2">{p.name}</span>
