@@ -9,6 +9,7 @@ import {
   TrendingUp,
   LogOut,
   HardHat,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -41,7 +42,7 @@ const futureItems = [
 
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
 
   const isActive = (url: string) => currentPath === url || currentPath.startsWith(url + "/");
 
@@ -97,6 +98,24 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>מערכת</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/users")} tooltip="ניהול משתמשים">
+                    <Link to="/users" className="flex items-center gap-3">
+                      <ShieldCheck className="h-4 w-4 shrink-0" />
+                      <span>ניהול משתמשים</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
