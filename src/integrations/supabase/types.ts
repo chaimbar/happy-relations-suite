@@ -54,40 +54,52 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          daily_cost_estimate: number
+          daily_cost_estimated: number
+          employment_type: string | null
           full_name: string
           id: string
-          identifier: string | null
+          id_number: string | null
+          job_title: string | null
           monthly_cost_actual: number | null
           notes: string | null
           phone: string | null
+          start_date: string | null
           status: Database["public"]["Enums"]["employee_status"]
+          timewatch_employee_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
-          daily_cost_estimate?: number
+          daily_cost_estimated?: number
+          employment_type?: string | null
           full_name: string
           id?: string
-          identifier?: string | null
+          id_number?: string | null
+          job_title?: string | null
           monthly_cost_actual?: number | null
           notes?: string | null
           phone?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
+          timewatch_employee_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
-          daily_cost_estimate?: number
+          daily_cost_estimated?: number
+          employment_type?: string | null
           full_name?: string
           id?: string
-          identifier?: string | null
+          id_number?: string | null
+          job_title?: string | null
           monthly_cost_actual?: number | null
           notes?: string | null
           phone?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
+          timewatch_employee_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -359,7 +371,8 @@ export type Database = {
           id: string
           employee_id: string
           month: string
-          amount: number
+          amount_actual: number
+          is_paid: boolean
           notes: string | null
           created_by: string | null
           created_at: string
@@ -368,7 +381,8 @@ export type Database = {
           id?: string
           employee_id: string
           month: string
-          amount?: number
+          amount_actual?: number
+          is_paid?: boolean
           notes?: string | null
           created_by?: string | null
           created_at?: string
@@ -377,7 +391,8 @@ export type Database = {
           id?: string
           employee_id?: string
           month?: string
-          amount?: number
+          amount_actual?: number
+          is_paid?: boolean
           notes?: string | null
         }
         Relationships: []
