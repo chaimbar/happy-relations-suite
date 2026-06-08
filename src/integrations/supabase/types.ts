@@ -14,16 +14,205 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          daily_cost_estimate: number
+          full_name: string
+          id: string
+          identifier: string | null
+          monthly_cost_actual: number | null
+          notes: string | null
+          phone: string | null
+          status: Database["public"]["Enums"]["employee_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          daily_cost_estimate?: number
+          full_name: string
+          id?: string
+          identifier?: string | null
+          monthly_cost_actual?: number | null
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          daily_cost_estimate?: number
+          full_name?: string
+          id?: string
+          identifier?: string | null
+          monthly_cost_actual?: number | null
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          address: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          has_drywall: boolean
+          id: string
+          materials_cost: number
+          name: string
+          notes: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          has_drywall?: boolean
+          id?: string
+          materials_cost?: number
+          name: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          has_drywall?: boolean
+          id?: string
+          materials_cost?: number
+          name?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "team_manager" | "employee"
+      employee_status: "active" | "inactive"
+      project_status: "active" | "completed" | "on_hold"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +339,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "team_manager", "employee"],
+      employee_status: ["active", "inactive"],
+      project_status: ["active", "completed", "on_hold"],
+    },
   },
 } as const
