@@ -84,6 +84,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "מערכת לניהול עובדים, אתרים, לקוחות ורווחיות בזמן אמת." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "ניהול אתרים — מערכת תפעולית" },
+      { name: "twitter:description", content: "מערכת לניהול עובדים, אתרים, לקוחות ורווחיות בזמן אמת." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/6lCVrqExzCRoGN0H79PZfXIyrbR2/social-images/social-1780909036610-תמונה_של_WhatsApp‏_2025-09-15_בשעה_23.36.08_2e30a8c9.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/6lCVrqExzCRoGN0H79PZfXIyrbR2/social-images/social-1780909036610-תמונה_של_WhatsApp‏_2025-09-15_בשעה_23.36.08_2e30a8c9.webp" },
     ],
     links: [
       {
