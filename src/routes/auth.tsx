@@ -46,7 +46,7 @@ function AuthPage() {
       return;
     }
     toast.success("התחברת בהצלחה");
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/", replace: true });
   }
 
   async function handleSignUp(e: React.FormEvent) {
@@ -66,7 +66,7 @@ function AuthPage() {
       return;
     }
     toast.success("נרשמת בהצלחה", { description: "מתחבר..." });
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/", replace: true });
   }
 
   return (
