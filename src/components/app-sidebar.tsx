@@ -34,9 +34,9 @@ const mainItems = [
 ];
 
 const futureItems = [
-  { title: "שיבוץ יומי", url: "/scheduling", icon: Calendar, soon: true },
-  { title: "תשלומים", url: "/payments", icon: Wallet, soon: true },
-  { title: "רווחיות", url: "/profitability", icon: TrendingUp, soon: true },
+  { title: "שיבוץ יומי", url: "/scheduling", icon: Calendar },
+  { title: "תשלומים", url: "/payments", icon: Wallet },
+  { title: "רווחיות", url: "/profitability", icon: TrendingUp },
 ];
 
 export function AppSidebar() {
@@ -81,17 +81,16 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>בקרוב</SidebarGroupLabel>
+          <SidebarGroupLabel>ניהול</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {futureItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton disabled tooltip={`${item.title} (בקרוב)`}>
-                    <item.icon className="h-4 w-4 shrink-0 opacity-60" />
-                    <span className="opacity-60">{item.title}</span>
-                    <span className="ms-auto text-[10px] text-accent group-data-[collapsible=icon]:hidden">
-                      בקרוב
-                    </span>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <Link to={item.url} className="flex items-center gap-3">
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span>{item.title}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

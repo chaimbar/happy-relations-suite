@@ -22,6 +22,9 @@ const ROUTE_TITLES: Record<string, string> = {
   "/employees": "עובדים",
   "/clients": "לקוחות",
   "/projects": "אתרים",
+  "/scheduling": "שיבוץ יומי",
+  "/payments": "תשלומים",
+  "/profitability": "רווחיות",
 };
 
 function AuthenticatedLayout() {

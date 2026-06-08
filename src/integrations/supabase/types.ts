@@ -196,9 +196,209 @@ export type Database = {
         }
         Relationships: []
       }
+      assignments: {
+        Row: {
+          id: string
+          employee_id: string
+          project_id: string
+          date: string
+          cost_snapshot: number
+          notes: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          project_id: string
+          date: string
+          cost_snapshot?: number
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          project_id?: string
+          date?: string
+          cost_snapshot?: number
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_stages: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          payment_amount: number
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          sort_order: number
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          payment_amount?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          sort_order?: number
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          payment_amount?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          sort_order?: number
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      materials: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          quantity: number
+          unit_price: number
+          total_price: number
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          quantity?: number
+          unit_price?: number
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          quantity?: number
+          unit_price?: number
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          id: string
+          client_id: string
+          project_id: string
+          total_amount: number
+          paid_amount: number
+          status: Database["public"]["Enums"]["payment_status"]
+          payment_date: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          project_id: string
+          total_amount?: number
+          paid_amount?: number
+          status?: Database["public"]["Enums"]["payment_status"]
+          payment_date?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          project_id?: string
+          total_amount?: number
+          paid_amount?: number
+          status?: Database["public"]["Enums"]["payment_status"]
+          payment_date?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      salaries: {
+        Row: {
+          id: string
+          employee_id: string
+          month: string
+          amount: number
+          notes: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          month: string
+          amount?: number
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          month?: string
+          amount?: number
+          notes?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      project_profitability: {
+        Row: {
+          id: string
+          name: string
+          client_id: string | null
+          total_price: number
+          materials_cost: number
+          status: string
+          estimated_labor_cost: number
+          estimated_profit: number
+          total_collected: number
+          balance_due: number
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -213,6 +413,7 @@ export type Database = {
       app_role: "admin" | "team_manager" | "employee"
       employee_status: "active" | "inactive"
       project_status: "active" | "completed" | "on_hold"
+      payment_status: "pending" | "partial" | "paid"
     }
     CompositeTypes: {
       [_ in never]: never

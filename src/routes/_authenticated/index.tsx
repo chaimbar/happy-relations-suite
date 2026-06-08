@@ -1,133 +1,272 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Building2, UserCog, TrendingUp, ArrowLeft } from "lucide-react";
+import { Users, Building2, UserCog, TrendingUp, Wallet, AlertTriangle, Calendar } from "lucide-react";
+import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
+function fmt(n: number) {
+  return `₪${Number(n).toLocaleString("he-IL")}`;
+}
+
 function Dashboard() {
+  const today = format(new Date(), "yyyy-MM-dd");
+
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const [emp, cli, proj] = await Promise.all([
-        supabase.from("employees").select("id, status", { count: "exact", head: false }),
+      const [emp, cli, proj, todayAssign, payments] = await Promise.all([
+        supabase.from("employees").select("id, status"),
         supabase.from("clients").select("id", { count: "exact", head: true }),
-        supabase.from("projects").select("id, status, total_price", { count: "exact", head: false }),
+        supabase.from("projects").select("id, status, total_price"),
+        supabase.from("assignments").select("id, employee_id").eq("date", today),
+        supabase.from("payments").select("total_amount, paid_amount, status"),
       ]);
-      const activeEmployees = emp.data?.filter((e) => e.status === "active").length ?? 0;
-      const activeProjects = proj.data?.filter((p) => p.status === "active").length ?? 0;
-      const revenue = proj.data?.reduce((s, p) => s + Number(p.total_price || 0), 0) ?? 0;
+
+      const activeEmployees = emp.data?.filter((e) => e.status === "active") ?? [];
+      const activeProjects = proj.data?.filter((p) => p.status === "active") ?? [];
+      const todayEmployeeIds = new Set((todayAssign.data ?? []).map((a) => a.employee_id));
+      const unassignedToday = activeEmployees.filter((e) => !todayEmployeeIds.has(e.id));
+
+      const totalDebt = (payments.data ?? []).reduce(
+        (s, p) => s + (Number(p.total_amount) - Number(p.paid_amount)), 0
+      );
+      const openPayments = (payments.data ?? []).filter((p) => p.status !== "paid").length;
+      const revenue = (proj.data ?? []).reduce((s, p) => s + Number(p.total_price || 0), 0);
+
       return {
         employees: emp.data?.length ?? 0,
-        activeEmployees,
+        activeEmployees: activeEmployees.length,
         clients: cli.count ?? 0,
         projects: proj.data?.length ?? 0,
-        activeProjects,
+        activeProjects: activeProjects.length,
         revenue,
+        todayAssignments: todayAssign.data?.length ?? 0,
+        unassignedCount: unassignedToday.length,
+        totalDebt,
+        openPayments,
       };
     },
   });
 
-  const cards = [
-    {
-      label: "עובדים פעילים",
-      value: stats?.activeEmployees ?? "—",
-      sub: `מתוך ${stats?.employees ?? 0}`,
-      icon: UserCog,
-      to: "/employees" as const,
-      color: "from-primary to-primary/70",
+  const { data: todayList = [] } = useQuery({
+    queryKey: ["today-assignments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assignments")
+        .select("id, employees(full_name), projects(name)")
+        .eq("date", today);
+      if (error) throw error;
+      return data as { id: string; employees: { full_name: string }; projects: { name: string } }[];
     },
-    {
-      label: "אתרים פעילים",
-      value: stats?.activeProjects ?? "—",
-      sub: `מתוך ${stats?.projects ?? 0}`,
-      icon: Building2,
-      to: "/projects" as const,
-      color: "from-accent to-accent/70",
+  });
+
+  const { data: recentProjects = [] } = useQuery({
+    queryKey: ["recent-projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, status, total_price, materials_cost")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data as { id: string; name: string; status: string; total_price: number; materials_cost: number }[];
     },
-    {
-      label: "לקוחות",
-      value: stats?.clients ?? "—",
-      sub: "סך הכל",
-      icon: Users,
-      to: "/clients" as const,
-      color: "from-chart-3 to-chart-3/70",
-    },
-    {
-      label: "הכנסה צפויה",
-      value: stats ? `₪${stats.revenue.toLocaleString("he-IL")}` : "—",
-      sub: "מכל הפרויקטים",
-      icon: TrendingUp,
-      to: "/projects" as const,
-      color: "from-chart-4 to-chart-4/70",
-    },
-  ];
+  });
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display text-2xl font-bold">ברוכים הבאים 👋</h2>
+        <h2 className="font-display text-2xl font-bold">דשבורד</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          סקירה מהירה של הפעילות במערכת
+          {format(new Date(), "EEEE, d MMMM yyyy")}
         </p>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <Link key={c.label} to={c.to} className="group">
-            <Card className="overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {c.label}
-                    </p>
-                    <p className="font-display text-3xl font-bold mt-2">{c.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{c.sub}</p>
-                  </div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${c.color} text-white shrink-0`}>
-                    <c.icon className="h-5 w-5" />
-                  </div>
+      {/* KPI grid */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <Link to="/employees">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">עובדים פעילים</p>
+                  <p className="font-display text-3xl font-bold mt-2">{stats?.activeEmployees ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">מתוך {stats?.employees ?? 0}</p>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-400 text-white shrink-0">
+                  <UserCog className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/projects">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">אתרים פעילים</p>
+                  <p className="font-display text-3xl font-bold mt-2">{stats?.activeProjects ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">מתוך {stats?.projects ?? 0}</p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-400 text-white shrink-0">
+                  <Building2 className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/clients">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">לקוחות</p>
+                  <p className="font-display text-3xl font-bold mt-2">{stats?.clients ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">סך הכל</p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-400 text-white shrink-0">
+                  <Users className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/profitability">
+          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">הכנסה כוללת</p>
+                  <p className="font-display text-2xl font-bold mt-2">
+                    {stats ? fmt(stats.revenue) : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">כל הפרויקטים</p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-400 text-white shrink-0">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">השלבים הבאים בפיתוח</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <NextStep n="2" title="שיבוץ יומי" desc="לוח שנה לשיבוץ עובדים לאתרים עם Drag & Drop" />
-          <NextStep n="3" title="תשלומים וחובות" desc="מעקב תשלומים לפי לקוח ולפי אתר" />
-          <NextStep n="4" title="עלויות עובדים מדויקות" desc="עלות משוערת בזמן אמת + עלות בפועל בסוף חודש" />
-          <NextStep n="5" title="ניתוח רווחיות" desc="רווח משוער מול בפועל, סטיית עלות" />
-          <NextStep n="6" title="אינטגרציה לשעון נוכחות" desc="חיבור ל-Time Watch לעדכון עלויות אונליין" />
-          <NextStep n="7" title="AI הוצאות" desc="שליפת שדות אוטומטית ממסמכי הוצאות" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+      {/* Second row: alerts */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+        <Link to="/payments">
+          <Card className={`hover:shadow-md transition-shadow cursor-pointer ${(stats?.totalDebt ?? 0) > 0 ? "border-destructive/30" : ""}`}>
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 shrink-0">
+                <AlertTriangle className={`h-6 w-6 ${(stats?.totalDebt ?? 0) > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">חובות פתוחים</p>
+                <p className={`text-2xl font-bold ${(stats?.totalDebt ?? 0) > 0 ? "text-destructive" : "text-green-600"}`}>
+                  {stats ? fmt(stats.totalDebt) : "—"}
+                </p>
+                <p className="text-xs text-muted-foreground">{stats?.openPayments ?? 0} תשלומים ממתינים</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-function NextStep({ n, title, desc }: { n: string; title: string; desc: string }) {
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border/50">
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-accent-foreground font-bold text-sm shrink-0">
-        {n}
+        <Link to="/scheduling">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 shrink-0">
+                <Calendar className="h-6 w-6 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">שיבוצים היום</p>
+                <p className="text-2xl font-bold">{stats?.todayAssignments ?? "—"}</p>
+                {(stats?.unassignedCount ?? 0) > 0 && (
+                  <p className="text-xs text-orange-500">{stats?.unassignedCount} עובדים ללא שיבוץ</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm">{title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {/* Today's assignments */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-blue-500" />
+              שיבוצים היום
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {todayList.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-muted-foreground text-sm">אין שיבוצים להיום</p>
+                <Link to="/scheduling" className="text-xs text-blue-500 hover:underline mt-1 block">
+                  לוח שיבוץ ←
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {todayList.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/40">
+                    <span className="font-medium text-sm">{a.employees.full_name}</span>
+                    <Badge variant="outline" className="text-xs">{a.projects.name}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Active projects */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-emerald-500" />
+              אתרים פעילים
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentProjects.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-muted-foreground text-sm">אין אתרים פעילים</p>
+                <Link to="/projects" className="text-xs text-blue-500 hover:underline mt-1 block">
+                  ניהול אתרים ←
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentProjects.map((p) => {
+                  const profit = Number(p.total_price) - Number(p.materials_cost);
+                  return (
+                    <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/40">
+                      <span className="font-medium text-sm truncate flex-1 me-2">{p.name}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground">{fmt(p.total_price)}</span>
+                        <span className={`text-xs font-semibold ${profit >= 0 ? "text-green-600" : "text-destructive"}`}>
+                          {fmt(profit)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-      <ArrowLeft className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
     </div>
   );
 }
