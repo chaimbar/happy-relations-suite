@@ -333,10 +333,7 @@ function EmployeesPage() {
     const avgDaily = employees.length
       ? Math.round(employees.reduce((s, e) => s + e.daily_cost_estimated, 0) / employees.length)
       : 0;
-    const shkirim = employees.filter(
-      (e) => !e.employment_type || e.employment_type === "שכיר"
-    ).length;
-    return { total: employees.length, activeCount: active.length, monthlyCost, avgDaily, shkirim };
+    return { total: employees.length, activeCount: active.length, monthlyCost, avgDaily };
   }, [employees]);
 
   // ── Filtered + sorted list (memoized) ──
@@ -657,7 +654,7 @@ function EmptyState({
             נקה סינון
           </button>
         )}
-        {isManager && !hasFilters && (
+        {isManager && (
           <button
             className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
             style={{ background: GRADIENT_BTN }}
@@ -737,7 +734,7 @@ const EmployeeCard = memo(function EmployeeCard({
         </div>
         {isManager && (
           <div
-            className="flex gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            className="flex gap-1 shrink-0 opacity-100 sm:opacity-40 sm:group-hover:opacity-100 transition-opacity"
             onClick={(e) => e.stopPropagation()}
           >
             <button onClick={handleEdit} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
@@ -850,7 +847,7 @@ const EmployeeRow = memo(function EmployeeRow({
       </td>
       {isManager && (
         <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-          <div className="flex gap-1 justify-end opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1 justify-end opacity-100 sm:opacity-40 sm:group-hover:opacity-100 transition-opacity">
             <button onClick={() => onEdit(emp)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
@@ -1197,7 +1194,7 @@ function EmployeeSalaryTab({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">סכום (₪)</Label>
-              <Input type="number" min="0" required value={form.amount}
+              <Input type="number" min="1" required value={form.amount}
                 placeholder="0"
                 onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} />
             </div>
