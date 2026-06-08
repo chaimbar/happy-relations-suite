@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, memo } from "react";
 import {
   Plus, Pencil, Trash2, Phone, IdCard, Search,
   Users, UserCheck, TrendingUp, CalendarDays,
-  FileSpreadsheet, ChevronLeft, Briefcase, Banknote,
+  FileSpreadsheet, Briefcase, Banknote,
   User, LayoutGrid, List, ArrowUpDown, CheckCircle2,
   Circle, Building2,
 } from "lucide-react";
@@ -377,6 +377,14 @@ function EmployeesPage() {
 
   const handleExport = useCallback(() => exportCSV(filtered), [filtered]);
 
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setFilterStatus("all");
+    setFilterEmpType("all");
+  }, []);
+
+  const hasActiveFilters = !!(search || filterStatus !== "all" || filterEmpType !== "all");
+
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
@@ -421,7 +429,7 @@ function EmployeesPage() {
           subText="לפי עובדים פעילים" icon={TrendingUp} gradient="orange" />
         <KPICard title="ממוצע יומי לעובד"
           value={`₪${kpi.avgDaily.toLocaleString("he-IL")}`}
-          subText={`${kpi.shkirim} שכירים`} icon={CalendarDays} gradient="purple" />
+          subText={kpi.total > 0 ? `על בסיס ${kpi.total} עובדים` : undefined} icon={CalendarDays} gradient="purple" />
       </div>
 
       {/* ── Filters ── */}
@@ -441,6 +449,14 @@ function EmployeesPage() {
           {EMPLOYMENT_TYPES.map((t) => (
             <FilterPill key={t} label={t} active={filterEmpType === t} onClick={() => setFilterEmpType(t)} />
           ))}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="mr-auto text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+            >
+              נקה הכל
+            </button>
+          )}
         </div>
 
         {/* Row 2: Search + Sort + View toggle */}
@@ -497,6 +513,15 @@ function EmployeesPage() {
         </div>
       </div>
 
+      {/* ── Results count ── */}
+      {!isLoading && !isError && filtered.length > 0 && (
+        <p className="text-sm text-muted-foreground -mt-2">
+          מציג {filtered.length}
+          {employees.length !== filtered.length && ` מתוך ${employees.length}`}
+          {" "}עובדים
+        </p>
+      )}
+
       {/* ── Content area ── */}
       {isLoading ? (
         <LoadingSkeleton view={view} />
@@ -504,9 +529,10 @@ function EmployeesPage() {
         <ErrorState />
       ) : filtered.length === 0 ? (
         <EmptyState
-          hasFilters={!!(search || filterStatus !== "all" || filterEmpType !== "all")}
+          hasFilters={hasActiveFilters}
           isManager={isManager}
           onAdd={() => setDialogOpen(true)}
+          onClearFilters={clearFilters}
         />
       ) : view === "grid" ? (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -608,8 +634,8 @@ function LoadingSkeleton({ view }: { view: ViewType }) {
 }
 
 function EmptyState({
-  hasFilters, isManager, onAdd,
-}: { hasFilters: boolean; isManager: boolean; onAdd: () => void }) {
+  hasFilters, isManager, onAdd, onClearFilters,
+}: { hasFilters: boolean; isManager: boolean; onAdd: () => void; onClearFilters?: () => void }) {
   return (
     <div className="text-center py-20">
       <div className="text-5xl mb-4">{hasFilters ? "🔍" : "😊"}</div>
@@ -621,15 +647,25 @@ function EmptyState({
           ? "נסה לשנות את הסינון או החיפוש"
           : "הוסף את העובד הראשון שלך"}
       </p>
-      {isManager && !hasFilters && (
-        <button
-          className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
-          style={{ background: GRADIENT_BTN }}
-          onClick={onAdd}
-        >
-          <Plus className="h-4 w-4 inline ml-1" /> הוסף עובד
-        </button>
-      )}
+      <div className="flex items-center justify-center gap-3">
+        {hasFilters && onClearFilters && (
+          <button
+            className="px-5 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors"
+            onClick={onClearFilters}
+          >
+            נקה סינון
+          </button>
+        )}
+        {isManager && !hasFilters && (
+          <button
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
+            style={{ background: GRADIENT_BTN }}
+            onClick={onAdd}
+          >
+            <Plus className="h-4 w-4 inline ml-1" /> הוסף עובד
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -690,7 +726,10 @@ const EmployeeCard = memo(function EmployeeCard({
           </div>
         </div>
         {isManager && (
-          <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button onClick={handleEdit} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
@@ -744,10 +783,6 @@ const EmployeeCard = memo(function EmployeeCard({
         </div>
       </div>
 
-      <div className="mt-3 pt-2 border-t flex items-center justify-between text-xs text-muted-foreground">
-        <span>לחץ לפרטים</span>
-        <ChevronLeft className="h-3.5 w-3.5" />
-      </div>
     </div>
   );
 });
@@ -801,7 +836,7 @@ const EmployeeRow = memo(function EmployeeRow({
       </td>
       {isManager && (
         <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-          <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1 justify-end opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button onClick={() => onEdit(emp)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
@@ -933,6 +968,7 @@ function EmployeeDetailsTab({ emp }: { emp: Employee }) {
       value: emp.start_date ? fmtDate(emp.start_date) : null,
       note:  sen ? `ותק: ${sen}` : undefined,
     },
+    { label: "מזהה Timewatch",       value: emp.timewatch_employee_id },
     { label: "עלות יומית",          value: `₪${Number(emp.daily_cost_estimated).toLocaleString("he-IL")}` },
     {
       label: "עלות חודשית בפועל",
@@ -1196,13 +1232,26 @@ function EmployeeSalaryTab({
                 <span className={cn("text-sm font-bold", sal.is_paid ? "text-green-700" : "")}>
                   ₪{Number(sal.amount_actual).toLocaleString("he-IL")}
                 </span>
-                <button
-                  onClick={() => deleteS.mutate(sal.id)}
-                  disabled={deleteS.isPending}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 transition-all disabled:opacity-40"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      disabled={deleteS.isPending}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 transition-all disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>למחוק רשומת שכר?</AlertDialogTitle>
+                      <AlertDialogDescription>פעולה זו אינה ניתנת לביטול.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>ביטול</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => deleteS.mutate(sal.id)}>מחק</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           ))}
@@ -1217,16 +1266,17 @@ function EmployeeSalaryTab({
    Bug fix: useEffect syncs form when `editing` changes
 ───────────────────────────────────────── */
 const EMPTY_FORM = {
-  full_name:            "",
-  phone:                "",
-  id_number:            "",
-  job_title:            "",
-  employment_type:      "שכיר",
-  start_date:           "",
-  status:               "active" as "active" | "inactive",
-  daily_cost_estimated: "0",
-  monthly_cost_actual:  "",
-  notes:                "",
+  full_name:             "",
+  phone:                 "",
+  id_number:             "",
+  job_title:             "",
+  employment_type:       "שכיר",
+  start_date:            "",
+  status:                "active" as "active" | "inactive",
+  daily_cost_estimated:  "0",
+  monthly_cost_actual:   "",
+  timewatch_employee_id: "",
+  notes:                 "",
 };
 
 function EmployeeDialog({
@@ -1247,10 +1297,11 @@ function EmployeeDialog({
         start_date:           editing.start_date              ?? "",
         status:               editing.status,
         daily_cost_estimated: String(editing.daily_cost_estimated ?? 0),
-        monthly_cost_actual:  editing.monthly_cost_actual != null
+        monthly_cost_actual:   editing.monthly_cost_actual != null
                                 ? String(editing.monthly_cost_actual)
                                 : "",
-        notes:                editing.notes ?? "",
+        timewatch_employee_id: editing.timewatch_employee_id ?? "",
+        notes:                 editing.notes ?? "",
       });
     } else {
       setForm(EMPTY_FORM);
@@ -1274,8 +1325,9 @@ function EmployeeDialog({
         start_date:           form.start_date        || null,
         status:               form.status,
         daily_cost_estimated: Number(form.daily_cost_estimated) || 0,
-        monthly_cost_actual:  form.monthly_cost_actual ? Number(form.monthly_cost_actual) : null,
-        notes:                form.notes.trim()      || null,
+        monthly_cost_actual:   form.monthly_cost_actual ? Number(form.monthly_cost_actual) : null,
+        timewatch_employee_id: form.timewatch_employee_id.trim() || null,
+        notes:                 form.notes.trim()      || null,
       };
       if (editing) {
         const { error } = await supabase.from("employees").update(payload).eq("id", editing.id);
@@ -1362,6 +1414,16 @@ function EmployeeDialog({
               placeholder="אופציונלי"
               onChange={(e) => f("monthly_cost_actual", e.target.value)} />
           </div>
+        </div>
+
+        {/* Timewatch ID */}
+        <div className="space-y-1.5">
+          <Label>מזהה Timewatch</Label>
+          <Input
+            value={form.timewatch_employee_id}
+            placeholder="אופציונלי"
+            onChange={(e) => f("timewatch_employee_id", e.target.value)}
+          />
         </div>
 
         {/* סטטוס */}
