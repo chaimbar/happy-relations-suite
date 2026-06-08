@@ -12,3 +12,8 @@
 2026-06-08 — feat(projects): UX audit on אתרים tab — skeleton loading, status filter chips, page header, smart empty states, RTL date fix, form price defaults
 
 - [2026-06-08] ux(employees): UX audit - ErrorState retry button, tel links, CSV label fix, destructive delete styling, opacity-40 discoverability, EmptyState always shows Add button, salary min=1, removed dead code
+## 2026-06-08 22:55 — Schema Sync (GAP-011/012/013)
+- types.ts מסונכרן עם DB האמיתי: employees, assignments, salary_records, enums
+- employees.tsx: תוקנו 6 שגיאות query/mutation (user_id, salary_records, shift_type, cost_estimated, sites)
+- Migration file הוחלף ב-no-op documentation
+

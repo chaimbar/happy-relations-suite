@@ -20,3 +20,4 @@
 
 - [2026-06-08] UX Audit tab employees: fixed 11 UX issues - retry button, tel links, CSV label, destructive delete, discoverability
 2026-06-08 22:42 | Spec Compliance Audit מלא — Overall 62% | 1 P0, 11 P1, 6 P2 | GAP-012 קריטי: DB schema חסר עמודות עובד
+2026-06-08 22:55 | GAP-011/012/013 Schema Fix — types.ts + employees.tsx מסונכרנים עם DB האמיתי (Lovable). תוקנו: salary_records, assignments, employees, enums.
