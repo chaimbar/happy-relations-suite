@@ -10,3 +10,5 @@
 2026-06-08 — ניהול משתמשים: טבלת user_roles + פונקציית get_all_users_for_admin + עמוד /users לאדמין בלבד + הוספת משתמשים + שינוי תפקיד + הסרת גישה + קישור בסיידבר
 2026-06-08 — UX Audit טאב לקוחות: avatar initials צבעוניים, skeleton loading, טלפון/מייל כלינקים, count מסוננן, ולידציה בטופס, empty state משופר, tooltips לכפתורים, notes preview בכרטיס
 2026-06-08 — feat(projects): UX audit on אתרים tab — skeleton loading, status filter chips, page header, smart empty states, RTL date fix, form price defaults
+
+- [2026-06-08] ux(employees): UX audit - ErrorState retry button, tel links, CSV label fix, destructive delete styling, opacity-40 discoverability, EmptyState always shows Add button, salary min=1, removed dead code
