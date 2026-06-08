@@ -1,0 +1,419 @@
+{
+  "project": {
+    "name": "CRM הלל מאן",
+    "description": "מערכת לניהול עובדים, אתרים, לקוחות ורווחיות",
+    "stack": "React 19 + TanStack Router + Supabase + Tailwind + shadcn/ui",
+    "rtl": true,
+    "lang": "he"
+  },
+
+  "modules": [
+    {
+      "id": "M1",
+      "name": "עובדים",
+      "table": "employees",
+      "status": "partial",
+      "worker": "בן",
+      "fields": [
+        { "name": "full_name", "type": "text", "status": "done" },
+        { "name": "phone", "type": "text", "status": "done" },
+        { "name": "identifier", "type": "text", "note": "ת\"ז / פנימי", "status": "done" },
+        { "name": "status", "type": "enum", "values": ["active", "inactive"], "status": "done" },
+        { "name": "daily_cost_estimate", "type": "numeric", "status": "done" },
+        { "name": "monthly_cost_actual", "type": "numeric", "note": "מוזן ידנית בסוף חודש", "status": "done" }
+      ],
+      "features": [
+        { "name": "CRUD עובדים", "status": "done" },
+        { "name": "רשימת עובדים + חיפוש + סינון", "status": "missing" },
+        { "name": "היסטוריית שיבוצים לעובד", "status": "missing" },
+        { "name": "עלות מצטברת לעובד (משוערת + בפועל)", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M2",
+      "name": "אתרים / פרויקטים",
+      "table": "projects",
+      "status": "partial",
+      "worker": "בן",
+      "fields": [
+        { "name": "name", "type": "text", "status": "done" },
+        { "name": "client_id", "type": "uuid", "ref": "clients", "status": "done" },
+        { "name": "address", "type": "text", "status": "done" },
+        { "name": "start_date", "type": "date", "status": "done" },
+        { "name": "end_date", "type": "date", "status": "done" },
+        { "name": "total_price", "type": "numeric", "note": "הכנסה צפויה", "status": "done" },
+        { "name": "materials_cost", "type": "numeric", "status": "done" },
+        { "name": "status", "type": "enum", "values": ["active", "completed", "on_hold"], "status": "done" },
+        { "name": "has_drywall", "type": "boolean", "note": "האם יש גבס", "status": "done" }
+      ],
+      "features": [
+        { "name": "CRUD אתרים", "status": "done" },
+        { "name": "רשימת אתרים עם סינון לפי סטטוס/לקוח", "status": "missing" },
+        { "name": "שלבי פרויקט (שחור/לבן/פינישים/גבס)", "status": "missing" },
+        { "name": "לוח תשלומים לפי שלב + סטטוס", "status": "missing" },
+        { "name": "עלות עובדים מחושבת (משוערת + בפועל)", "status": "missing" },
+        { "name": "רווח משוער + רווח בפועל", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M3",
+      "name": "שלבי פרויקט",
+      "table": "project_stages",
+      "status": "missing",
+      "worker": "בן",
+      "fields": [
+        { "name": "project_id", "type": "uuid", "ref": "projects" },
+        { "name": "name", "type": "text", "note": "שחור / לבן / פינישים / גבס" },
+        { "name": "payment_amount", "type": "numeric", "note": "סכום לתשלום בשלב זה" },
+        { "name": "payment_status", "type": "enum", "values": ["pending", "partial", "paid"] },
+        { "name": "sort_order", "type": "integer" }
+      ],
+      "features": [
+        { "name": "הגדרת שלבים לפרויקט", "status": "missing" },
+        { "name": "סימון שלב כשולם", "status": "missing" },
+        { "name": "תצוגת לוח תשלומים לפי שלב", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M4",
+      "name": "לקוחות",
+      "table": "clients",
+      "status": "partial",
+      "worker": "בן",
+      "fields": [
+        { "name": "name", "type": "text", "status": "done" },
+        { "name": "phone", "type": "text", "status": "done" },
+        { "name": "email", "type": "text", "status": "done" },
+        { "name": "address", "type": "text", "status": "done" }
+      ],
+      "features": [
+        { "name": "CRUD לקוחות", "status": "done" },
+        { "name": "רשימת לקוחות + חיפוש", "status": "missing" },
+        { "name": "סך כל הפרויקטים ללקוח", "status": "missing" },
+        { "name": "סך חובות + תשלומים + יתרה ללקוח", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M5",
+      "name": "שיבוץ עובדים",
+      "table": "assignments",
+      "status": "missing",
+      "worker": "בן",
+      "fields": [
+        { "name": "employee_id", "type": "uuid", "ref": "employees" },
+        { "name": "project_id", "type": "uuid", "ref": "projects" },
+        { "name": "date", "type": "date" },
+        { "name": "cost_snapshot", "type": "numeric", "note": "עלות יומית בעת השיבוץ" }
+      ],
+      "features": [
+        { "name": "שיבוץ עובד לאתר לפי תאריך", "status": "missing" },
+        { "name": "תצוגת יומן שבועי", "status": "missing" },
+        { "name": "Drag & Drop שיבוץ", "status": "missing" },
+        { "name": "מי עובד איפה היום (תצוגה יומית)", "status": "missing" },
+        { "name": "עובדים לא משובצים היום", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M6",
+      "name": "חומרים",
+      "table": "materials",
+      "status": "missing",
+      "worker": "בן",
+      "note": "גרסה בסיסית: רק עלות כוללת. גרסה מתקדמת: רשימת פריטים",
+      "fields": [
+        { "name": "project_id", "type": "uuid", "ref": "projects" },
+        { "name": "name", "type": "text" },
+        { "name": "quantity", "type": "numeric" },
+        { "name": "unit_price", "type": "numeric" },
+        { "name": "total_price", "type": "numeric", "note": "computed: quantity × unit_price" }
+      ],
+      "features": [
+        { "name": "רשימת חומרים לפרויקט", "status": "missing" },
+        { "name": "סיכום עלות חומרים", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M7",
+      "name": "תשלומים",
+      "table": "payments",
+      "status": "missing",
+      "worker": "בן",
+      "fields": [
+        { "name": "client_id", "type": "uuid", "ref": "clients" },
+        { "name": "project_id", "type": "uuid", "ref": "projects" },
+        { "name": "total_amount", "type": "numeric" },
+        { "name": "paid_amount", "type": "numeric" },
+        { "name": "balance", "type": "numeric", "note": "computed: total - paid" },
+        { "name": "status", "type": "enum", "values": ["pending", "partial", "paid"] },
+        { "name": "payment_date", "type": "date" },
+        { "name": "notes", "type": "text" }
+      ],
+      "features": [
+        { "name": "הוספת תשלום לפרויקט", "status": "missing" },
+        { "name": "תצוגת חובות לפי לקוח", "status": "missing" },
+        { "name": "תצוגת חובות לפי אתר", "status": "missing" },
+        { "name": "יתרה כוללת ללקוח", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M8",
+      "name": "שכר עובדים",
+      "table": "salaries",
+      "status": "missing",
+      "worker": "בן",
+      "note": "מוזן ידנית בסוף חודש — מעדכן עלות בפועל",
+      "fields": [
+        { "name": "employee_id", "type": "uuid", "ref": "employees" },
+        { "name": "month", "type": "date", "note": "תאריך ראשון בחודש" },
+        { "name": "amount", "type": "numeric" },
+        { "name": "notes", "type": "text" }
+      ],
+      "features": [
+        { "name": "הזנת שכר חודשי לעובד", "status": "missing" },
+        { "name": "עדכון עלות בפועל אוטומטית", "status": "missing" },
+        { "name": "חישוב רווח בפועל לאחר שכר אמיתי", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M9",
+      "name": "רווחיות",
+      "status": "missing",
+      "worker": "בן",
+      "note": "מסך דוחות מחושב — אין טבלה ייעודית, הכל views ו-queries",
+      "calculations": {
+        "estimated_profit": "total_price - (sum(assignments × daily_cost_estimate) + materials_cost)",
+        "actual_profit": "total_price - (monthly_cost_actual_allocated + materials_cost)",
+        "cost_variance": "actual_cost - estimated_cost",
+        "variance_note": "חריגה חיובית = יקר מהצפוי"
+      },
+      "features": [
+        { "name": "רווח משוער לפרויקט (live)", "status": "missing" },
+        { "name": "רווח בפועל לפרויקט", "status": "missing" },
+        { "name": "סטיית עלות (Variance)", "status": "missing" },
+        { "name": "רווח חודשי מצטבר", "status": "missing" },
+        { "name": "תצוגה גרפית (Recharts)", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M10",
+      "name": "דשבורד",
+      "status": "partial",
+      "worker": "בן",
+      "features": [
+        { "name": "שלד דשבורד", "status": "done" },
+        { "name": "עובדים פעילים היום", "status": "missing" },
+        { "name": "אתרים פעילים", "status": "missing" },
+        { "name": "רווח חודשי (משוער + בפועל)", "status": "missing" },
+        { "name": "חובות פתוחים", "status": "missing" },
+        { "name": "עובדים לא משובצים", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M11",
+      "name": "הרשאות",
+      "status": "partial",
+      "worker": "בן",
+      "roles": [
+        { "name": "admin", "description": "מנהל ראשי — שליטה מלאה", "status": "done" },
+        { "name": "team_manager", "description": "מנהל צוות — רק עובדים שלו", "status": "schema_only" },
+        { "name": "employee", "description": "עובד — צפייה בלבד", "status": "schema_only" }
+      ],
+      "features": [
+        { "name": "RLS policies בסיסיות", "status": "done" },
+        { "name": "UI מותנה לפי תפקיד", "status": "missing" },
+        { "name": "מנהל צוות רואה רק עובדים שלו", "status": "missing" }
+      ]
+    },
+    {
+      "id": "M12",
+      "name": "Auth",
+      "status": "done",
+      "worker": "done",
+      "features": [
+        { "name": "Magic Link", "status": "done" },
+        { "name": "Show/Hide Password", "status": "done" },
+        { "name": "Protected Routes", "status": "done" }
+      ]
+    },
+    {
+      "id": "M13",
+      "name": "פיצ'רים נוספים",
+      "status": "missing",
+      "features": [
+        { "name": "חיפוש וסינון מתקדם בכל מודול", "status": "missing", "worker": "בן" },
+        { "name": "ייצוא לאקסל", "status": "missing", "worker": "בן" },
+        { "name": "RTL מלא בעברית", "status": "partial", "worker": "עידו" },
+        { "name": "מותאם מובייל", "status": "partial", "worker": "עידו" },
+        { "name": "התראות (מייל / וואטסאפ)", "status": "missing", "worker": "יובל", "note": "Make.com integration" },
+        { "name": "היסטוריית פעולות", "status": "missing", "worker": "בן" },
+        { "name": "אינטגרציית TimeWatch", "status": "missing", "worker": "יובל", "note": "Make.com webhook" },
+        { "name": "AI לקריאת מסמכי הוצאות", "status": "missing", "worker": "future" }
+      ]
+    }
+  ],
+
+  "database_schema": {
+    "existing_tables": ["profiles", "user_roles", "employees", "clients", "projects"],
+    "missing_tables": ["assignments", "project_stages", "materials", "payments", "salaries"],
+    "migrations_needed": [
+      {
+        "order": 1,
+        "name": "create_assignments",
+        "tables": ["assignments"]
+      },
+      {
+        "order": 2,
+        "name": "create_project_stages",
+        "tables": ["project_stages"]
+      },
+      {
+        "order": 3,
+        "name": "create_materials_and_payments",
+        "tables": ["materials", "payments"]
+      },
+      {
+        "order": 4,
+        "name": "create_salaries",
+        "tables": ["salaries"]
+      }
+    ]
+  },
+
+  "work_division": [
+    {
+      "worker": "ריבה",
+      "role": "CRM Analyst",
+      "command": "/crm-spec",
+      "tasks": [
+        "SQL schema מלא לטבלאות החסרות",
+        "RLS policies לכל טבלה חדשה",
+        "View SQL לחישובי רווחיות"
+      ],
+      "priority": 1,
+      "status": "next"
+    },
+    {
+      "worker": "עידו",
+      "role": "CRM UX",
+      "command": "/crm-ux",
+      "tasks": [
+        "מסך שיבוץ יומי + יומן שבועי",
+        "מסך תשלומים (לפי לקוח + לפי אתר)",
+        "מסך רווחיות + גרפים",
+        "כרטיס אתר מורחב (שלבים + עלויות)",
+        "דשבורד — ווידג'טים"
+      ],
+      "priority": 2,
+      "status": "pending_spec"
+    },
+    {
+      "worker": "בן",
+      "role": "Full Stack Dev",
+      "command": "/crm-build-prompt",
+      "tasks": [
+        "Supabase migrations (טבלאות חסרות)",
+        "עובדים — רשימה + עריכה + היסטוריית שיבוצים",
+        "לקוחות — רשימה + חובות מחושבים",
+        "אתרים — רשימה + כרטיס מפורט + שלבים",
+        "שיבוץ — יומן שבועי + drag & drop",
+        "תשלומים — CRUD + תצוגה לפי לקוח/אתר",
+        "רווחיות — מסך דוחות + Recharts",
+        "דשבורד — כל הווידג'טים האמיתיים",
+        "חיפוש + סינון בכל מודול"
+      ],
+      "priority": 3,
+      "status": "pending_ux"
+    },
+    {
+      "worker": "יואב",
+      "role": "QA Engineer",
+      "command": "/qa",
+      "qa_cycles": [
+        {
+          "cycle": 1,
+          "after": "Supabase migrations",
+          "checks": ["tables created", "RLS working", "no SQL errors"]
+        },
+        {
+          "cycle": 2,
+          "after": "עובדים + לקוחות + אתרים",
+          "checks": ["CRUD flows", "RTL layout", "mobile responsive"]
+        },
+        {
+          "cycle": 3,
+          "after": "שיבוץ + תשלומים",
+          "checks": ["calendar rendering", "drag & drop", "payment calculations"]
+        },
+        {
+          "cycle": 4,
+          "after": "רווחיות + דשבורד",
+          "checks": ["profit calculations correct", "charts render", "all widgets show real data"]
+        },
+        {
+          "cycle": 5,
+          "after": "all features",
+          "checks": ["full E2E flow", "permissions per role", "no 🔴 critical issues"]
+        }
+      ],
+      "priority": 4,
+      "status": "active_after_each_cycle"
+    },
+    {
+      "worker": "גיא",
+      "role": "Security CTO",
+      "command": "/security-audit",
+      "tasks": [
+        "RLS audit — כל טבלה",
+        "Auth flow audit",
+        "API keys exposure check"
+      ],
+      "priority": 5,
+      "status": "after_qa"
+    },
+    {
+      "worker": "טל",
+      "role": "Deployment",
+      "command": "/crm-deploy",
+      "tasks": [
+        "Vercel deployment",
+        "env vars production",
+        "Supabase production migrations"
+      ],
+      "priority": 6,
+      "status": "after_security"
+    },
+    {
+      "worker": "יובל",
+      "role": "Make Automation",
+      "command": "/make",
+      "tasks": [
+        "TimeWatch webhook → assignments",
+        "התראת תשלום פתוח (וואטסאפ/מייל)"
+      ],
+      "priority": 7,
+      "status": "future"
+    }
+  ],
+
+  "pipeline": [
+    { "step": 1, "worker": "ריבה", "output": "SQL migrations ready", "gate": "migrations apply cleanly" },
+    { "step": 2, "worker": "עידו", "output": "UX specs for missing screens", "gate": "all core screens defined" },
+    { "step": 3, "worker": "בן", "output": "all features coded", "gate": "npm run build passes" },
+    { "step": 4, "worker": "יואב", "output": "QA report", "gate": "score >= 30/40, no 🔴" },
+    { "step": 5, "worker": "גיא", "output": "security clearance", "gate": "no critical vulnerabilities" },
+    { "step": 6, "worker": "טל", "output": "live on Vercel", "gate": "deployment successful" }
+  ],
+
+  "progress": {
+    "done": ["auth", "employees_schema", "clients_schema", "projects_schema", "navigation", "RLS_basic"],
+    "in_progress": [],
+    "missing": [
+      "assignments_table", "project_stages_table", "materials_table",
+      "payments_table", "salaries_table",
+      "employees_list_ui", "clients_list_ui", "projects_list_ui",
+      "scheduling_page", "payments_page", "profitability_page",
+      "dashboard_widgets", "search_filter", "excel_export",
+      "role_based_ui"
+    ]
+  }
+}
