@@ -27,10 +27,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 
 const mainItems = [
-  { title: "דשבורד", url: "/dashboard", icon: LayoutDashboard },
-  { title: "עובדים", url: "/employees", icon: UserCog },
-  { title: "לקוחות", url: "/clients", icon: Users },
-  { title: "אתרים", url: "/projects", icon: Building2 },
+  { title: "דשבורד", url: "/" as const, icon: LayoutDashboard },
+  { title: "עובדים", url: "/employees" as const, icon: UserCog },
+  { title: "לקוחות", url: "/clients" as const, icon: Users },
+  { title: "אתרים", url: "/projects" as const, icon: Building2 },
 ];
 
 const futureItems = [
