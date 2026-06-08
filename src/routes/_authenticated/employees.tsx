@@ -61,9 +61,9 @@ type Employee = {
 type Assignment = {
   id: string;
   date: string;
-  cost_snapshot: number;
-  notes: string | null;
-  projects: { name: string } | null;
+  shift_type: "full" | "morning" | "afternoon";
+  cost_estimated: number | null;
+  sites: { name: string } | null;
 };
 
 type SalaryRecord = {
@@ -218,7 +218,7 @@ function useEmployeeAssignments(employeeId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assignments")
-        .select("id, date, cost_snapshot, notes, projects(name)")
+        .select("id, date, shift_type, cost_estimated, sites(name)")
         .eq("employee_id", employeeId!)
         .order("date", { ascending: false })
         .limit(60);
@@ -236,7 +236,7 @@ function useEmployeeSalaries(employeeId: string | null) {
     enabled: !!employeeId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("salaries")
+        .from("salary_records")
         .select("id, month, amount_actual, is_paid, notes")
         .eq("employee_id", employeeId!)
         .order("month", { ascending: false });
@@ -1036,7 +1036,7 @@ function EmployeeAssignmentsTab({
 
   const { totalDays, totalCost } = useMemo(() => ({
     totalDays: assignments.length,
-    totalCost: assignments.reduce((s, a) => s + (a.cost_snapshot ?? dailyCost), 0),
+    totalCost: assignments.reduce((s, a) => s + (a.cost_estimated ?? dailyCost), 0),
   }), [assignments, dailyCost]);
 
   if (isLoading) return <TabLoader />;
@@ -1068,19 +1068,19 @@ function EmployeeAssignmentsTab({
               <div>
                 <div className="flex items-center gap-1.5">
                   <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <p className="text-sm font-medium">{a.projects?.name ?? "אתר לא ידוע"}</p>
+                  <p className="text-sm font-medium">{a.sites?.name ?? "אתר לא ידוע"}</p>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 mr-5">
                   <p className="text-xs text-muted-foreground">{fmtDate(a.date)}</p>
-                  {a.notes && (
+                  {a.shift_type && (
                     <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0">
-                      {a.notes}
+                      {SHIFT_LABELS[a.shift_type] ?? a.shift_type}
                     </Badge>
                   )}
                 </div>
               </div>
               <span className="text-sm font-semibold shrink-0">
-                ₪{Number(a.cost_snapshot ?? dailyCost).toLocaleString("he-IL")}
+                ₪{Number(a.cost_estimated ?? dailyCost).toLocaleString("he-IL")}
               </span>
             </div>
           ))}
@@ -1110,12 +1110,12 @@ function EmployeeSalaryTab({
   const addM = useMutation({
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("salaries").insert({
+      const { error } = await supabase.from("salary_records").insert({
         employee_id:   employeeId,
         month:         form.month + "-01",
         amount_actual: Number(form.amount),
         notes:         form.notes.trim() || null,
-        created_by:    u.user?.id ?? null,
+        user_id:       u.user!.id,
         is_paid:       false,
       });
       if (error) throw error;
@@ -1132,7 +1132,7 @@ function EmployeeSalaryTab({
   const togglePaidM = useMutation({
     mutationFn: async ({ id, is_paid }: { id: string; is_paid: boolean }) => {
       const { error } = await supabase
-        .from("salaries").update({ is_paid }).eq("id", id);
+        .from("salary_records").update({ is_paid }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, { is_paid }) => {
@@ -1144,7 +1144,7 @@ function EmployeeSalaryTab({
 
   const deleteS = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("salaries").delete().eq("id", id);
+      const { error } = await supabase.from("salary_records").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -1353,7 +1353,7 @@ function EmployeeDialog({
         if (error) throw error;
       } else {
         const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("employees").insert({ ...payload, created_by: u.user?.id ?? null });
+        const { error } = await supabase.from("employees").insert({ ...payload, user_id: u.user!.id });
         if (error) throw error;
       }
     },

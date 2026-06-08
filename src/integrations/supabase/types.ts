@@ -53,9 +53,8 @@ export type Database = {
       employees: {
         Row: {
           created_at: string
-          created_by: string | null
-          daily_cost_estimated: number
-          employment_type: string | null
+          daily_cost_estimated: number | null
+          employment_type: string
           full_name: string
           id: string
           id_number: string | null
@@ -67,12 +66,12 @@ export type Database = {
           status: Database["public"]["Enums"]["employee_status"]
           timewatch_employee_id: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
-          daily_cost_estimated?: number
-          employment_type?: string | null
+          daily_cost_estimated?: number | null
+          employment_type?: string
           full_name: string
           id?: string
           id_number?: string | null
@@ -84,12 +83,12 @@ export type Database = {
           status?: Database["public"]["Enums"]["employee_status"]
           timewatch_employee_id?: string | null
           updated_at?: string
+          user_id: string
         }
         Update: {
           created_at?: string
-          created_by?: string | null
-          daily_cost_estimated?: number
-          employment_type?: string | null
+          daily_cost_estimated?: number | null
+          employment_type?: string
           full_name?: string
           id?: string
           id_number?: string | null
@@ -101,6 +100,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["employee_status"]
           timewatch_employee_id?: string | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -211,33 +211,38 @@ export type Database = {
       assignments: {
         Row: {
           id: string
-          employee_id: string
-          project_id: string
-          date: string
-          cost_snapshot: number
-          notes: string | null
-          created_by: string | null
           created_at: string
+          updated_at: string
+          employee_id: string
+          site_id: string
+          date: string
+          shift_type: Database["public"]["Enums"]["shift_type"]
+          cost_estimated: number | null
+          notes: string | null
+          user_id: string
         }
         Insert: {
           id?: string
-          employee_id: string
-          project_id: string
-          date: string
-          cost_snapshot?: number
-          notes?: string | null
-          created_by?: string | null
           created_at?: string
+          updated_at?: string
+          employee_id: string
+          site_id: string
+          date: string
+          shift_type?: Database["public"]["Enums"]["shift_type"]
+          cost_estimated?: number | null
+          notes?: string | null
+          user_id: string
         }
         Update: {
           id?: string
           employee_id?: string
-          project_id?: string
+          site_id?: string
           date?: string
-          cost_snapshot?: number
+          shift_type?: Database["public"]["Enums"]["shift_type"]
+          cost_estimated?: number | null
           notes?: string | null
-          created_by?: string | null
-          created_at?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -248,10 +253,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "assignments_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "assignments_site_id_fkey"
+            columns: ["site_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
@@ -366,34 +371,44 @@ export type Database = {
         }
         Relationships: []
       }
-      salaries: {
+      salary_records: {
         Row: {
           id: string
+          created_at: string
+          updated_at: string
           employee_id: string
+          site_id: string | null
           month: string
           amount_actual: number
+          timewatch_sync: boolean | null
           is_paid: boolean
           notes: string | null
-          created_by: string | null
-          created_at: string
+          user_id: string
         }
         Insert: {
           id?: string
+          created_at?: string
+          updated_at?: string
           employee_id: string
+          site_id?: string | null
           month: string
-          amount_actual?: number
+          amount_actual: number
+          timewatch_sync?: boolean | null
           is_paid?: boolean
           notes?: string | null
-          created_by?: string | null
-          created_at?: string
+          user_id: string
         }
         Update: {
           id?: string
           employee_id?: string
+          site_id?: string | null
           month?: string
           amount_actual?: number
+          timewatch_sync?: boolean | null
           is_paid?: boolean
           notes?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -427,8 +442,9 @@ export type Database = {
     Enums: {
       app_role: "admin" | "team_manager" | "employee"
       employee_status: "active" | "inactive"
-      project_status: "active" | "completed" | "on_hold"
-      payment_status: "pending" | "partial" | "paid"
+      payment_method: "bank_transfer" | "check" | "cash" | "credit_card" | "other"
+      shift_type: "full" | "morning" | "afternoon"
+      site_status: "active" | "completed" | "paused" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -558,7 +574,9 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "team_manager", "employee"],
       employee_status: ["active", "inactive"],
-      project_status: ["active", "completed", "on_hold"],
+      payment_method: ["bank_transfer", "check", "cash", "credit_card", "other"],
+      shift_type: ["full", "morning", "afternoon"],
+      site_status: ["active", "completed", "paused", "cancelled"],
     },
   },
 } as const
