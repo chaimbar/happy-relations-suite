@@ -16,3 +16,4 @@
 2026-06-08 — employees tab rebuilt with full feature set: KPIs, filter pills, detail sheet, salary + assignment history, CSV export
 2026-06-08 — שדרוג מקיף טאב עובדים: תיקון 9 באגים קריטיים בשמות עמודות/טבלאות, שיפור ביצועים, 3 custom hooks, תצוגת רשימה, sort, סינון סוג העסקה, job_title, ותק, סטטוס תשלום שכר
 2026-06-08 20:06 — Production deployment: Supabase migration הורץ (job_title, employment_type, start_date, monthly_cost_actual, is_paid, indexes) + GitHub push (502cb83) + Lovable published → himelech.crmbizflow.online
+2026-06-08 — feat(projects): UX audit — אתרים tab improvements

@@ -8,3 +8,5 @@
 2026-06-08 — employees.tsx: שדרוג מקיף — תיקון 9 באגים קריטיים (שמות עמודות/טבלאות), performance (useMemo/useCallback/memo), 3 custom hooks, sort+view-toggle, job_title/employment_type/start_date, salary is_paid
 2026-06-08 — UX Audit טאב עובדים: תיקון נגישות מובייל (כפתורי עריכה/מחיקה), נקה סינון בפילטרים ו-empty state, ספירת תוצאות, timewatch_employee_id בטופס ובפרטים, אישור לפני מחיקת שכר, הסרת 'לחץ לפרטים' מכרטיסייה
 2026-06-08 — ניהול משתמשים: טבלת user_roles + פונקציית get_all_users_for_admin + עמוד /users לאדמין בלבד + הוספת משתמשים + שינוי תפקיד + הסרת גישה + קישור בסיידבר
+2026-06-08 — UX Audit טאב לקוחות: avatar initials צבעוניים, skeleton loading, טלפון/מייל כלינקים, count מסוננן, ולידציה בטופס, empty state משופר, tooltips לכפתורים, notes preview בכרטיס
+2026-06-08 — feat(projects): UX audit on אתרים tab — skeleton loading, status filter chips, page header, smart empty states, RTL date fix, form price defaults

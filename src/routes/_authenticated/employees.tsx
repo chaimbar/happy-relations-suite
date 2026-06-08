@@ -309,7 +309,7 @@ function EmployeesPage() {
   const [selectedEmp,   setSelectedEmp]   = useState<Employee | null>(null);
 
   // ── Data ──
-  const { data: employees = [], isLoading, isError } = useEmployees();
+  const { data: employees = [], isLoading, isError, refetch } = useEmployees();
 
   // ── Mutations ──
   const deleteM = useMutation({
@@ -526,7 +526,7 @@ function EmployeesPage() {
       {isLoading ? (
         <LoadingSkeleton view={view} />
       ) : isError ? (
-        <ErrorState />
+        <ErrorState onRetry={refetch} />
       ) : filtered.length === 0 ? (
         <EmptyState
           hasFilters={hasActiveFilters}
@@ -670,12 +670,21 @@ function EmptyState({
   );
 }
 
-function ErrorState() {
+function ErrorState({ onRetry }: { onRetry?: () => void }) {
   return (
     <div className="text-center py-20">
       <div className="text-5xl mb-4">⚠️</div>
       <h3 className="text-lg font-semibold mb-2">שגיאה בטעינת הנתונים</h3>
-      <p className="text-sm text-muted-foreground">נסה לרענן את הדף</p>
+      <p className="text-sm text-muted-foreground mb-4">לא ניתן לטעון את רשימת העובדים</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="px-5 py-2 rounded-xl text-sm font-semibold text-white"
+          style={{ background: GRADIENT_BTN }}
+        >
+          נסה שוב
+        </button>
+      )}
     </div>
   );
 }
