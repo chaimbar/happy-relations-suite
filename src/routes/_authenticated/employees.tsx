@@ -758,9 +758,11 @@ const EmployeeCard = memo(function EmployeeCard({
       {/* Info rows */}
       <div className="space-y-1.5 text-sm text-muted-foreground mb-4">
         {emp.phone && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Phone className="h-3.5 w-3.5 shrink-0" />
-            <span dir="ltr">{emp.phone}</span>
+            <a href={`tel:${emp.phone}`} dir="ltr" className="hover:text-primary hover:underline transition-colors">
+              {emp.phone}
+            </a>
           </div>
         )}
         {emp.id_number && (
@@ -829,8 +831,10 @@ const EmployeeRow = memo(function EmployeeRow({
       <td className="py-3 px-4 text-muted-foreground hidden md:table-cell">
         {emp.job_title ?? "—"}
       </td>
-      <td className="py-3 px-4 text-muted-foreground hidden md:table-cell">
-        <span dir="ltr">{emp.phone ?? "—"}</span>
+      <td className="py-3 px-4 text-muted-foreground hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
+        {emp.phone
+          ? <a href={`tel:${emp.phone}`} dir="ltr" className="hover:text-primary hover:underline transition-colors">{emp.phone}</a>
+          : "—"}
       </td>
       <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">
         {sen || "—"}
