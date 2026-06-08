@@ -151,10 +151,11 @@ function AuthPage() {
                       id="signup-password"
                       type="password"
                       required
-                      minLength={6}
+                      minLength={8}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
+                    <p className="text-xs text-muted-foreground">לפחות 8 תווים, כולל אות גדולה, מספר וסימן (למשל: <span dir="ltr">Admin@2024!</span>)</p>
                     <p className="text-xs text-muted-foreground">המשתמש הראשון במערכת מקבל אוטומטית הרשאת מנהל ראשי</p>
                   </div>
                   <Button type="submit" disabled={loading} className="w-full">
