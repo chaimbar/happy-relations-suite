@@ -58,6 +58,26 @@ const ROLE_VARIANTS: Record<AppRole, string> = {
   employee:     "bg-gray-100 text-gray-700 border-gray-200",
 };
 
+/** Invoke an edge function and surface the Hebrew error message from its JSON body. */
+async function invokeEdge<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (error) {
+    let msg = error.message;
+    try {
+      const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+      if (ctx?.json) {
+        const j = await ctx.json();
+        if (j?.error) msg = j.error;
+      }
+    } catch { /* keep default message */ }
+    throw new Error(msg);
+  }
+  if (data && typeof data === "object" && "error" in data && data.error) {
+    throw new Error(String((data as { error: string }).error));
+  }
+  return data as T;
+}
+
 function generatePassword(length = 10): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#";
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
@@ -105,21 +125,9 @@ function UsersPageInner() {
     mutationFn: async ({ email, fullName, role, password }: {
       email: string; fullName: string; role: AppRole; password: string;
     }) => {
-      // 1. Create auth user
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      });
-      if (signUpErr) throw signUpErr;
-      const userId = signUpData.user?.id;
-      if (!userId) throw new Error("לא נוצר משתמש");
-
-      // 2. Assign role
-      const { error: roleErr } = await supabase.from("user_roles").insert({
-        user_id: userId, role,
-      });
-      if (roleErr) throw roleErr;
+      // Create via secure edge function (service role) so the admin's own
+      // session is never replaced and the email is pre-confirmed.
+      await invokeEdge("admin-create-user", { email, fullName, role, password });
     },
     onSuccess: (_, vars) => {
       toast.success("משתמש נוצר בהצלחה");
@@ -146,17 +154,16 @@ function UsersPageInner() {
     onError: (e: Error) => toast.error("עדכון נכשל", { description: e.message }),
   });
 
-  /* ── Remove role mutation ── */
-  const removeRoleM = useMutation({
+  /* ── Delete user mutation (full delete: auth user + role) ── */
+  const deleteUserM = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId);
-      if (error) throw error;
+      await invokeEdge("admin-delete-user", { userId });
     },
     onSuccess: () => {
-      toast.success("גישה הוסרה");
+      toast.success("המשתמש נמחק");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
-    onError: (e: Error) => toast.error("הסרה נכשלה", { description: e.message }),
+    onError: (e: Error) => toast.error("מחיקה נכשלה", { description: e.message }),
   });
 
   const openEdit = useCallback((u: UserRow) => setEditTarget(u), []);
@@ -210,7 +217,7 @@ function UsersPageInner() {
                   user={u}
                   isCurrentUser={u.user_id === currentUser?.id}
                   onEdit={openEdit}
-                  onRemove={(id) => removeRoleM.mutate(id)}
+                  onRemove={(id) => deleteUserM.mutate(id)}
                 />
               ))}
             </tbody>
@@ -306,30 +313,33 @@ function UserRow({
             >
               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
-            {user.role && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
-                    className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                    title="הסר גישה"
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                  title="מחק משתמש"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent dir="rtl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>למחוק את {user.email}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    פעולה זו מוחקת את המשתמש לצמיתות — כולל החשבון והתפקיד. לא ניתן לשחזר.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>ביטול</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onRemove(user.user_id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent dir="rtl">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>הסר גישה מ-{user.email}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      המשתמש לא יוכל להיכנס למערכת. ניתן לשחזר בכל עת.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>ביטול</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onRemove(user.user_id)}>הסר גישה</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                    מחק לצמיתות
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </td>
