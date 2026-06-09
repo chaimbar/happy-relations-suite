@@ -36,11 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       if (data.session?.user) {
-        void fetchRoles(data.session.user.id);
+        await fetchRoles(data.session.user.id);
       }
       setLoading(false);
     });
