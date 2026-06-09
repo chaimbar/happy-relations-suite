@@ -19,7 +19,13 @@ import { Route as AuthenticatedProfitabilityRouteImport } from './routes/_authen
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 
+const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/employees': typeof AuthenticatedEmployeesRoute
+  '/materials': typeof AuthenticatedMaterialsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profitability': typeof AuthenticatedProfitabilityRoute
   '/projects': typeof AuthenticatedProjectsRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/employees': typeof AuthenticatedEmployeesRoute
+  '/materials': typeof AuthenticatedMaterialsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profitability': typeof AuthenticatedProfitabilityRoute
   '/projects': typeof AuthenticatedProjectsRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
+  '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profitability': typeof AuthenticatedProfitabilityRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/clients'
     | '/employees'
+    | '/materials'
     | '/payments'
     | '/profitability'
     | '/projects'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/clients'
     | '/employees'
+    | '/materials'
     | '/payments'
     | '/profitability'
     | '/projects'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/clients'
     | '/_authenticated/employees'
+    | '/_authenticated/materials'
     | '/_authenticated/payments'
     | '/_authenticated/profitability'
     | '/_authenticated/projects'
@@ -220,12 +232,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/materials': {
+      id: '/_authenticated/materials'
+      path: '/materials'
+      fullPath: '/materials'
+      preLoaderRoute: typeof AuthenticatedMaterialsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
+  AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfitabilityRoute: typeof AuthenticatedProfitabilityRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
@@ -237,6 +257,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
+  AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfitabilityRoute: AuthenticatedProfitabilityRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,

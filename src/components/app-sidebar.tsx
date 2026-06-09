@@ -10,6 +10,7 @@ import {
   LogOut,
   HardHat,
   ShieldCheck,
+  Package,
 } from "lucide-react";
 
 import {
@@ -37,6 +38,7 @@ const mainItems = [
 const futureItems = [
   { title: "שיבוץ יומי", url: "/scheduling" as const, icon: Calendar },
   { title: "תשלומים", url: "/payments" as const, icon: Wallet },
+  { title: "חומרים", url: "/materials" as const, icon: Package },
   { title: "רווחיות", url: "/profitability" as const, icon: TrendingUp },
 ];
 
