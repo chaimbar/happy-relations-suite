@@ -23,3 +23,4 @@
 2026-06-09 — GAP-007/018/023: הוספת Client Analytics (סיכום פיננסי בכרטיס לקוח: אתרים/שולם/יתרה), Payments By Site (breakdown per project expandable), Advanced Search (status chips + client filter). clients.tsx + payments.tsx.
 
 2026-06-09 — GAP-014/003/002: הוחלה מיגרציית אבטחה — RLS isolation למנהלי צוות, triggers ל-audit_logs על 7 טבלאות, notification_queue + Edge Function לשליחת מייל/ווטסאפ
+2026-06-09 — שיבוצים מלא: GAP-001 Drag&Drop, GAP-009 Daily View, GAP-017 Site View, GAP-020 Employee View, GAP-026 Double Detection + Color Coding + Filters

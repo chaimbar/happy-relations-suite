@@ -26,3 +26,4 @@
 2026-06-09 — GAP-007/018/023: Client financial analytics on card + payments by site expandable + advanced filters (status chips + client dropdown). push לגיטהב.
 
 2026-06-09 — Security: הוחלה מיגרציה 20260609003000 — GAP-014 (team_manager isolation), GAP-003 (audit triggers), GAP-002 (notification_queue + Edge Function)
+2026-06-09 — מימוש מלא מודול שיבוצים: 4 views, drag&drop, color coding, filters, double detection
