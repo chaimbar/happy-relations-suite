@@ -31,3 +31,4 @@
 2026-06-09 - תיקון סכמה מלא: clients.tsx (full_name, client_balance), payments.tsx (כתיבה מחדש לסכמה האמיתית: site_id/amount/payment_method), materials.tsx (project_id->site_id, created_by->user_id), types.ts (כתיבה מחדש לפי DB אמיתי)
 
 - 2026-06-09 — הוספת שינוי סיסמה עצמי לכל סוגי המשתמשים (כפתור בסייד-בר + דיאלוג, supabase.auth.updateUser)
+2026-06-09 — תיקון חיבור Supabase: עדכון .env ו-config.toml מ-hozkrgoxtkcwnzsjnpuj לפרויקט הנכון goyxefoioaphbomplsmq, push לגיטהב commit 2ba794c
