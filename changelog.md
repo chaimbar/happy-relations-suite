@@ -28,3 +28,4 @@
 2026-06-09 feat(dashboard): Owner Dashboard שדרוג — Smart Alerts, גבייה חודשית, רווח נקי+מרווח%, פעולות מומלצות דינמיות, empty states עם CTA
  — תיקון הרשאות אדמין: עדכון profiles.role ל-admin עבור chaimb407@gmail.com + תיקון race condition ב-useAuth (setLoading ממתין ל-fetchRoles)
 2026-06-09 — תיקון הרשאות אדמין: עדכון profiles.role ל-admin עבור chaimb407@gmail.com + תיקון race condition ב-useAuth (setLoading ממתין ל-fetchRoles)
+2026-06-09 - תיקון סכמה מלא: clients.tsx (full_name, client_balance), payments.tsx (כתיבה מחדש לסכמה האמיתית: site_id/amount/payment_method), materials.tsx (project_id->site_id, created_by->user_id), types.ts (כתיבה מחדש לפי DB אמיתי)
