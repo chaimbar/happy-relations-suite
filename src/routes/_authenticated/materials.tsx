@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/materials")({
 
 type Material = {
   id: string;
-  project_id: string;
+  site_id: string;
   name: string;
   quantity: number;
   unit_price: number;
@@ -52,7 +52,7 @@ async function syncSiteMaterialsCost(siteId: string) {
   const { data } = await supabase
     .from("materials")
     .select("total_price")
-    .eq("project_id", siteId);
+    .eq("site_id", siteId);
   const total = (data ?? []).reduce((s, m) => s + Number(m.total_price), 0);
   await supabase.from("sites").update({ materials_cost: total }).eq("id", siteId);
 }
@@ -81,7 +81,7 @@ function MaterialsPage() {
     queryKey: ["materials", siteFilter],
     queryFn: async () => {
       let q = supabase.from("materials").select("*").order("created_at", { ascending: false });
-      if (siteFilter !== "all") q = q.eq("project_id", siteFilter);
+      if (siteFilter !== "all") q = q.eq("site_id", siteFilter);
       const { data, error } = await q;
       if (error) throw error;
       return data as Material[];
@@ -94,7 +94,7 @@ function MaterialsPage() {
     mutationFn: async (mat: Material) => {
       const { error } = await supabase.from("materials").delete().eq("id", mat.id);
       if (error) throw error;
-      await syncSiteMaterialsCost(mat.project_id);
+      await syncSiteMaterialsCost(mat.site_id);
     },
     onSuccess: () => {
       toast.success("חומר נמחק");
@@ -107,7 +107,7 @@ function MaterialsPage() {
 
   const filtered = materials.filter((m) => {
     if (!search) return true;
-    const site = siteMap.get(m.project_id);
+    const site = siteMap.get(m.site_id);
     return (
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       site?.name.toLowerCase().includes(search.toLowerCase())
@@ -244,7 +244,7 @@ function MaterialsPage() {
                     >
                       {siteFilter === "all" && (
                         <td className="px-4 py-3 text-muted-foreground text-xs">
-                          {siteMap.get(m.project_id)?.name ?? "—"}
+                          {siteMap.get(m.site_id)?.name ?? "—"}
                         </td>
                       )}
                       <td className="px-4 py-3 font-medium">{m.name}</td>
@@ -334,7 +334,7 @@ function MaterialDialog({
 }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
-    project_id: editing?.project_id ?? defaultSiteId ?? "",
+    site_id: editing?.site_id ?? defaultSiteId ?? "",
     name: editing?.name ?? "",
     quantity: editing?.quantity != null ? editing.quantity.toString() : "",
     unit_price: editing?.unit_price != null ? editing.unit_price.toString() : "",
@@ -351,7 +351,7 @@ function MaterialDialog({
       const qty = Number(form.quantity) || 0;
       const up = Number(form.unit_price) || 0;
       const payload = {
-        project_id: form.project_id,
+        site_id: form.site_id,
         name: form.name.trim(),
         quantity: qty,
         unit_price: up,
@@ -364,10 +364,10 @@ function MaterialDialog({
         const { data: u } = await supabase.auth.getUser();
         const { error } = await supabase
           .from("materials")
-          .insert({ ...payload, created_by: u.user?.id });
+          .insert({ ...payload, user_id: u.user!.id });
         if (error) throw error;
       }
-      await syncSiteMaterialsCost(form.project_id);
+      await syncSiteMaterialsCost(form.site_id);
     },
     onSuccess: () => {
       toast.success(editing ? "חומר עודכן" : "חומר נוסף");
@@ -392,8 +392,8 @@ function MaterialDialog({
         <div className="space-y-2">
           <Label>אתר *</Label>
           <Select
-            value={form.project_id || "_none"}
-            onValueChange={(v) => setForm({ ...form, project_id: v === "_none" ? "" : v })}
+            value={form.site_id || "_none"}
+            onValueChange={(v) => setForm({ ...form, site_id: v === "_none" ? "" : v })}
           >
             <SelectTrigger>
               <SelectValue placeholder="בחר אתר" />
@@ -460,7 +460,7 @@ function MaterialDialog({
           <Button type="button" variant="outline" onClick={onClose}>ביטול</Button>
           <Button
             type="submit"
-            disabled={saveM.isPending || !form.project_id || !form.name.trim()}
+            disabled={saveM.isPending || !form.site_id || !form.name.trim()}
           >
             {saveM.isPending ? "שומר..." : editing ? "עדכן" : "הוסף"}
           </Button>

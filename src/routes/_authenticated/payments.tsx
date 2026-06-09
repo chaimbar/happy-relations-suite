@@ -37,6 +37,7 @@ type PaymentMethod = "cash" | "bank_transfer" | "check" | "credit_card" | "other
 
 type Payment = {
   id: string;
+  client_id: string;
   site_id: string | null;
   amount: number;
   payment_date: string;
@@ -44,12 +45,8 @@ type Payment = {
   reference: string | null;
   notes: string | null;
   user_id: string | null;
-  sites: {
-    name: string;
-    contract_price: number | null;
-    client_id: string | null;
-    clients: { full_name: string } | null;
-  } | null;
+  sites: { name: string; contract_price: number | null } | null;
+  clients: { full_name: string } | null;
 };
 
 type ClientBalance = {
@@ -116,7 +113,7 @@ function PaymentsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("*, sites(name, contract_price, client_id, clients(full_name))")
+        .select("*, sites(name, contract_price), clients(full_name)")
         .order("payment_date", { ascending: false });
       if (error) throw error;
       return data as Payment[];
@@ -170,7 +167,7 @@ function PaymentsPage() {
   // GAP-023: Multi-criteria filtered list
   const filtered = useMemo(() => {
     return payments.filter((p) => {
-      if (clientFilter !== "all" && p.sites?.client_id !== clientFilter) return false;
+      if (clientFilter !== "all" && p.client_id !== clientFilter) return false;
       if (methodFilter !== "all" && p.payment_method !== methodFilter) return false;
       if (dateFrom && p.payment_date < dateFrom) return false;
       if (dateTo && p.payment_date > dateTo) return false;
@@ -200,7 +197,7 @@ function PaymentsPage() {
       .filter((b) => Number(b.total_invoiced) > 0 || Number(b.total_paid) > 0)
       .map((b) => {
         // Group payments for this client by site
-        const clientPayments = payments.filter((p) => p.sites?.client_id === b.id);
+        const clientPayments = payments.filter((p) => p.client_id === b.id);
         const siteMap = new Map<string, { siteName: string; contractPrice: number; paid: number }>();
         for (const p of clientPayments) {
           const sid = p.site_id ?? "__none__";
@@ -397,7 +394,7 @@ function PaymentsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold">
-                            {p.sites?.clients?.full_name ?? "—"}
+                            {p.clients?.full_name ?? "—"}
                           </span>
                           <span className="text-muted-foreground text-xs">←</span>
                           <span className="text-sm text-muted-foreground">{p.sites?.name ?? "—"}</span>
