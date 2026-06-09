@@ -34,3 +34,5 @@
 2026-06-09 — תיקון חיבור Supabase: עדכון .env ו-config.toml מ-hozkrgoxtkcwnzsjnpuj לפרויקט הנכון goyxefoioaphbomplsmq, push לגיטהב commit 2ba794c
 - 2026-06-09: אבטחה+RLS — תיקון 4 SECURITY DEFINER views, איחוד מערכת תפקידים ל-user_roles (מקור אמת יחיד), edge functions ליצירת/מחיקת משתמשים, בדיקות דפדפן חיות (admin+employee). נותר: פאבליש ב-Lovable + הקשחת חשיפת נתונים פיננסיים לעובד.
 - פיצ'ר בונוס: סימולטור תמחור (/pricing-simulator) — מחשב מחיר מומלץ לפרויקט חדש לפי ימי-עבודה/שלבים + buffer מבוסס סטיית עלות היסטורית; טבלת pricing_scenarios עם RLS למנהלים.
+
+- 2026-06-09 — הופעלה מערכת ההתראות (פריסת send-notification + חיווט מ-payments) + דף צ׳ק-אין ציבורי /checkin/:empId (submit_checkin) + סגירת חור RLS ציבורי ב-check_ins.

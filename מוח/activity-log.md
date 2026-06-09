@@ -33,3 +33,5 @@
 - 2026-06-09 — feat: self-service change-password for all roles (change-password-dialog.tsx + sidebar button)
 - 2026-06-09 22:0x | QA+אבטחה: זוהה ותוקן באג 'מוח כפול' בתפקידים (RLS לפי profiles.role מול user_roles בפרונט). edge functions admin-create-user/admin-delete-user פרוסים. נוצרו 3 משתמשי בדיקה (test-*@crmtest.local / Test1234!).
 2026-06-09 — נבנה סימולטור תמחור: migration pricing_scenarios (RLS admin/manager + audit trigger), דף חדש pricing-simulator.tsx עם 2 טאבים (ימי-עבודה/שלבים), חישוב buffer היסטורי, שמירת תרחישים, ניווט בסיידבר.
+
+- 2026-06-09 | הפעלת התראות תשלום (Resend) + צ׳ק-אין נוכחות ציבורי + סגירת מדיניות INSERT ציבורית ב-check_ins.
