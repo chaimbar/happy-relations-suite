@@ -29,10 +29,9 @@ export const Route = createFileRoute("/_authenticated/clients")({
 
 type Client = {
   id: string;
-  name: string;
+  full_name: string;
   phone: string | null;
   email: string | null;
-  address: string | null;
   notes: string | null;
 };
 
@@ -148,7 +147,7 @@ function ClientsPage() {
   });
 
   const filtered = clients.filter((c) =>
-    [c.name, c.phone, c.email].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
+    [c.full_name, c.phone, c.email].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const isFiltering = search.trim().length > 0;
@@ -279,7 +278,7 @@ function ClientCard({
   isDeleting: boolean;
 }) {
   const hasContact = c.phone || c.email || c.address;
-  const avatarColor = getAvatarColor(c.name);
+  const avatarColor = getAvatarColor(c.full_name);
   const hasFinancials = fin && (fin.totalContract > 0 || fin.siteCount > 0);
 
   return (
@@ -292,9 +291,9 @@ function ClientCard({
               className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${avatarColor}`}
               aria-hidden="true"
             >
-              {getInitials(c.name)}
+              {getInitials(c.full_name)}
             </div>
-            <h3 className="font-semibold text-base truncate leading-tight">{c.name}</h3>
+            <h3 className="font-semibold text-base truncate leading-tight">{c.full_name}</h3>
           </div>
 
           {isManager && (
@@ -306,7 +305,7 @@ function ClientCard({
                     variant="ghost"
                     className="h-8 w-8"
                     onClick={onEdit}
-                    aria-label={`ערוך את ${c.name}`}
+                    aria-label={`ערוך את ${c.full_name}`}
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
@@ -323,7 +322,7 @@ function ClientCard({
                           size="icon"
                           variant="ghost"
                           className="h-8 w-8"
-                          aria-label={`מחק את ${c.name}`}
+                          aria-label={`מחק את ${c.full_name}`}
                           disabled={isDeleting}
                         >
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />

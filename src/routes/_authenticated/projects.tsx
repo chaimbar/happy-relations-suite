@@ -23,7 +23,6 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/projects")({
   component: ProjectsPage,
@@ -36,26 +35,27 @@ type Project = {
   address: string | null;
   start_date: string | null;
   end_date: string | null;
-  total_price: number;
+  contract_price: number;
   materials_cost: number;
-  status: "active" | "completed" | "on_hold";
-  has_drywall: boolean;
+  status: "active" | "completed" | "paused" | "cancelled";
   notes: string | null;
 };
 
-type ClientLite = { id: string; name: string };
+type ClientLite = { id: string; full_name: string };
 
 const STATUS_LABEL: Record<Project["status"], { label: string; variant: "default" | "secondary" | "outline" }> = {
-  active: { label: "פעיל", variant: "default" },
-  on_hold: { label: "מושהה", variant: "outline" },
-  completed: { label: "הסתיים", variant: "secondary" },
+  active:    { label: "פעיל",    variant: "default" },
+  paused:    { label: "מושהה",   variant: "outline" },
+  completed: { label: "הסתיים",  variant: "secondary" },
+  cancelled: { label: "בוטל",    variant: "outline" },
 };
 
 const STATUS_FILTERS: { value: Project["status"] | "all"; label: string }[] = [
-  { value: "all", label: "הכל" },
-  { value: "active", label: "פעיל" },
-  { value: "on_hold", label: "מושהה" },
+  { value: "all",       label: "הכל" },
+  { value: "active",    label: "פעיל" },
+  { value: "paused",    label: "מושהה" },
   { value: "completed", label: "הסתיים" },
+  { value: "cancelled", label: "בוטל" },
 ];
 
 function ProjectsPage() {
@@ -70,7 +70,7 @@ function ProjectsPage() {
     queryKey: ["projects"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("projects").select("*").order("created_at", { ascending: false });
+        .from("sites").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data as Project[];
     },
@@ -79,21 +79,21 @@ function ProjectsPage() {
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-lite"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, name").order("name");
+      const { data, error } = await supabase.from("clients").select("id, full_name").order("full_name");
       if (error) throw error;
       return data as ClientLite[];
     },
   });
 
-  const clientMap = new Map(clients.map((c) => [c.id, c.name]));
+  const clientMap = new Map(clients.map((c) => [c.id, c.full_name]));
 
   const deleteM = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("projects").delete().eq("id", id);
+      const { error } = await supabase.from("sites").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("פרויקט נמחק");
+      toast.success("אתר נמחק");
       qc.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (e: Error) => toast.error("מחיקה נכשלה", { description: e.message }),
@@ -234,7 +234,7 @@ function ProjectsPage() {
         <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
           {filtered.map((p) => {
             const status = STATUS_LABEL[p.status];
-            const profitEstimate = Number(p.total_price) - Number(p.materials_cost);
+            const profitEstimate = Number(p.contract_price) - Number(p.materials_cost);
             return (
               <Card key={p.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-5">
@@ -243,7 +243,6 @@ function ProjectsPage() {
                       <h3 className="font-display font-semibold text-base truncate">{p.name}</h3>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
-                        {p.has_drywall && <Badge variant="outline" className="text-xs">כולל גבס</Badge>}
                       </div>
                     </div>
                     {isManager && (
@@ -306,7 +305,7 @@ function ProjectsPage() {
                   <div className="mt-4 pt-3 border-t grid grid-cols-3 gap-2 text-sm">
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">הכנסה</p>
-                      <p className="font-semibold">₪{Number(p.total_price).toLocaleString("he-IL")}</p>
+                      <p className="font-semibold">₪{Number(p.contract_price).toLocaleString("he-IL")}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">חומרים</p>
@@ -339,33 +338,32 @@ function ProjectDialog({
     address: editing?.address ?? "",
     start_date: editing?.start_date ?? "",
     end_date: editing?.end_date ?? "",
-    total_price: editing?.total_price != null ? editing.total_price.toString() : "",
+    contract_price: editing?.contract_price != null ? editing.contract_price.toString() : "",
     materials_cost: editing?.materials_cost != null ? editing.materials_cost.toString() : "",
     status: editing?.status ?? "active",
-    has_drywall: editing?.has_drywall ?? false,
     notes: editing?.notes ?? "",
   });
 
   const saveM = useMutation({
     mutationFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
       const payload = {
         name: form.name.trim(),
         client_id: form.client_id || null,
         address: form.address.trim() || null,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
-        total_price: form.total_price === "" ? 0 : Number(form.total_price),
+        contract_price: form.contract_price === "" ? 0 : Number(form.contract_price),
         materials_cost: form.materials_cost === "" ? 0 : Number(form.materials_cost),
         status: form.status as Project["status"],
-        has_drywall: form.has_drywall,
         notes: form.notes.trim() || null,
+        user_id: u.user!.id,
       };
       if (editing) {
-        const { error } = await supabase.from("projects").update(payload).eq("id", editing.id);
+        const { error } = await supabase.from("sites").update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("projects").insert({ ...payload, created_by: u.user?.id });
+        const { error } = await supabase.from("sites").insert(payload);
         if (error) throw error;
       }
     },
@@ -395,7 +393,7 @@ function ProjectDialog({
               <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_none">ללא</SelectItem>
-                {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -405,8 +403,9 @@ function ProjectDialog({
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">פעיל</SelectItem>
-                <SelectItem value="on_hold">מושהה</SelectItem>
+                <SelectItem value="paused">מושהה</SelectItem>
                 <SelectItem value="completed">הסתיים</SelectItem>
+                <SelectItem value="cancelled">בוטל</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -427,22 +426,15 @@ function ProjectDialog({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label>מחיר פרויקט (₪)</Label>
-            <Input type="number" min="0" step="any" value={form.total_price}
-              onChange={(e) => setForm({ ...form, total_price: e.target.value })} />
+            <Label>מחיר חוזה (₪)</Label>
+            <Input type="number" min="0" step="any" value={form.contract_price}
+              onChange={(e) => setForm({ ...form, contract_price: e.target.value })} />
           </div>
           <div className="space-y-2">
             <Label>עלות חומרים (₪)</Label>
             <Input type="number" min="0" step="any" value={form.materials_cost}
               onChange={(e) => setForm({ ...form, materials_cost: e.target.value })} />
           </div>
-        </div>
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <Label className="text-sm">כולל גבס</Label>
-            <p className="text-xs text-muted-foreground">לפרויקטים עם שלב גבס/פינישים</p>
-          </div>
-          <Switch checked={form.has_drywall} onCheckedChange={(c) => setForm({ ...form, has_drywall: c })} />
         </div>
         <div className="space-y-2">
           <Label>הערות</Label>
