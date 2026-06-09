@@ -24,3 +24,5 @@
 
 2026-06-09 — GAP-014/003/002: הוחלה מיגרציית אבטחה — RLS isolation למנהלי צוות, triggers ל-audit_logs על 7 טבלאות, notification_queue + Edge Function לשליחת מייל/ווטסאפ
 2026-06-09 — שיבוצים מלא: GAP-001 Drag&Drop, GAP-009 Daily View, GAP-017 Site View, GAP-020 Employee View, GAP-026 Double Detection + Color Coding + Filters
+
+2026-06-09 feat(dashboard): Owner Dashboard שדרוג — Smart Alerts, גבייה חודשית, רווח נקי+מרווח%, פעולות מומלצות דינמיות, empty states עם CTA
