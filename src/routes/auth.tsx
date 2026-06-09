@@ -63,7 +63,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: true,
+        shouldCreateUser: false,
         emailRedirectTo: window.location.origin,
         data: fullName ? { full_name: fullName } : undefined,
       },
