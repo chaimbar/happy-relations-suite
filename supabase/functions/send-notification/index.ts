@@ -20,6 +20,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY  = Deno.env.get("RESEND_API_KEY");
 const MAKE_WEBHOOK    = Deno.env.get("MAKE_WEBHOOK_URL");
+// Free default sender — works with NO DNS setup as long as the recipient is the
+// Resend account owner (our admin). Override with a verified-domain sender, e.g.
+// NOTIFY_FROM="CRM הלל מאן <noreply@crmbizflow.online>", after verifying the domain.
+const NOTIFY_FROM     = Deno.env.get("NOTIFY_FROM") ?? "CRM הלל מאן <onboarding@resend.dev>";
 const SUPABASE_URL    = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -36,9 +40,11 @@ interface NotificationRow {
   event_data: Record<string, unknown> | null;
 }
 
-async function sendEmail(n: NotificationRow): Promise<void> {
-  if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not set");
-  if (!n.recipient_email) throw new Error("No recipient_email");
+// Returns true if an email was actually sent, false if this channel is not
+// configured/applicable (so the caller can decide whether the row succeeded).
+async function sendEmail(n: NotificationRow): Promise<boolean> {
+  if (!RESEND_API_KEY) return false;
+  if (!n.recipient_email) return false;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -47,7 +53,7 @@ async function sendEmail(n: NotificationRow): Promise<void> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "CRM הלל מאן <noreply@crmbizflow.online>",
+      from: NOTIFY_FROM,
       to: [n.recipient_email],
       subject: n.subject ?? n.event_type,
       text: n.body,
@@ -58,10 +64,12 @@ async function sendEmail(n: NotificationRow): Promise<void> {
     const err = await res.text();
     throw new Error(`Resend error: ${err}`);
   }
+  return true;
 }
 
-async function sendWhatsApp(n: NotificationRow): Promise<void> {
-  if (!MAKE_WEBHOOK) throw new Error("MAKE_WEBHOOK_URL not set");
+async function sendWhatsApp(n: NotificationRow): Promise<boolean> {
+  if (!MAKE_WEBHOOK) return false;
+  if (!n.recipient_phone) return false;
 
   const res = await fetch(MAKE_WEBHOOK, {
     method: "POST",
@@ -78,6 +86,7 @@ async function sendWhatsApp(n: NotificationRow): Promise<void> {
     const err = await res.text();
     throw new Error(`Make webhook error: ${err}`);
   }
+  return true;
 }
 
 Deno.serve(async (_req) => {
@@ -97,8 +106,22 @@ Deno.serve(async (_req) => {
 
   for (const n of (pending ?? []) as NotificationRow[]) {
     try {
-      if (n.channel === "email" || n.channel === "both") await sendEmail(n);
-      if (n.channel === "whatsapp" || n.channel === "both") await sendWhatsApp(n);
+      let sent = false;
+      if (n.channel === "email" || n.channel === "both") {
+        if (await sendEmail(n)) sent = true;
+      }
+      if (n.channel === "whatsapp" || n.channel === "both") {
+        if (await sendWhatsApp(n)) sent = true;
+      }
+
+      // No configured channel could deliver this row — surface it instead of
+      // silently marking it "sent".
+      if (!sent) {
+        throw new Error(
+          `No delivery channel available for channel="${n.channel}" ` +
+          `(RESEND_API_KEY set: ${!!RESEND_API_KEY}, MAKE_WEBHOOK_URL set: ${!!MAKE_WEBHOOK})`,
+        );
+      }
 
       await supabase
         .from("notification_queue")

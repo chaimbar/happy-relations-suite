@@ -12,6 +12,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      pricing_scenarios: {
+        Row: {
+          id: string
+          name: string
+          client_id: string | null
+          input_mode: string
+          inputs: Json
+          estimated_labor_cost: number
+          estimated_materials_cost: number
+          applied_buffer_pct: number
+          desired_margin_pct: number
+          suggested_price: number
+          converted_site_id: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          client_id?: string | null
+          input_mode?: string
+          inputs?: Json
+          estimated_labor_cost?: number
+          estimated_materials_cost?: number
+          applied_buffer_pct?: number
+          desired_margin_pct?: number
+          suggested_price?: number
+          converted_site_id?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          client_id?: string | null
+          input_mode?: string
+          inputs?: Json
+          estimated_labor_cost?: number
+          estimated_materials_cost?: number
+          applied_buffer_pct?: number
+          desired_margin_pct?: number
+          suggested_price?: number
+          converted_site_id?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "pricing_scenarios_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] },
+          { foreignKeyName: "pricing_scenarios_converted_site_id_fkey"; columns: ["converted_site_id"]; isOneToOne: false; referencedRelation: "sites"; referencedColumns: ["id"] },
+        ]
+      }
       assignments: {
         Row: {
           cost_estimated: number | null

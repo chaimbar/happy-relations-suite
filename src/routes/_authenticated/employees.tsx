@@ -6,7 +6,7 @@ import {
   Users, UserCheck, TrendingUp, CalendarDays,
   FileSpreadsheet, Briefcase, Banknote,
   User, LayoutGrid, List, ArrowUpDown, CheckCircle2,
-  Circle, Building2,
+  Circle, Building2, QrCode,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -1021,6 +1021,21 @@ function EmployeeDetailsTab({ emp }: { emp: Employee }) {
           <p className="text-sm">{emp.notes}</p>
         </div>
       )}
+
+      {/* Personal check-in link — the worker opens it (e.g. via QR) to mark attendance */}
+      <button
+        type="button"
+        onClick={() => {
+          const link = `${window.location.origin}/checkin/${emp.id}`;
+          navigator.clipboard.writeText(link).then(
+            () => toast.success("קישור צ'ק-אין הועתק", { description: link }),
+            () => toast.error("ההעתקה נכשלה", { description: link }),
+          );
+        }}
+        className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl border border-border/60 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+      >
+        <QrCode className="h-4 w-4" /> העתק קישור צ'ק-אין לעובד
+      </button>
     </div>
   );
 }

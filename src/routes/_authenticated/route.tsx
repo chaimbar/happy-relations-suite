@@ -25,6 +25,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/scheduling": "שיבוץ יומי",
   "/payments": "תשלומים",
   "/profitability": "רווחיות",
+  "/pricing-simulator": "סימולטור תמחור",
   "/users": "ניהול משתמשים",
 };
 

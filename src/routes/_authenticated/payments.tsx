@@ -641,6 +641,11 @@ function PaymentDialog({
         const { data: u } = await supabase.auth.getUser();
         const { error } = await supabase.from("payments").insert({ ...payload, user_id: u.user!.id });
         if (error) throw error;
+        // The DB trigger notify_on_payment queued an admin notification; drain
+        // the queue now (best-effort — never block the payment on delivery).
+        supabase.functions.invoke("send-notification").catch((err) => {
+          console.warn("[payments] send-notification invoke failed:", err);
+        });
       }
     },
     onSuccess: () => {

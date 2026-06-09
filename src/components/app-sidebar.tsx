@@ -14,6 +14,7 @@ import {
   Package,
   DollarSign,
   KeyRound,
+  Calculator,
 } from "lucide-react";
 
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
@@ -46,6 +47,7 @@ const futureItems = [
   { title: "שכר בפועל", url: "/salaries" as const, icon: DollarSign },
   { title: "חומרים", url: "/materials" as const, icon: Package },
   { title: "רווחיות", url: "/profitability" as const, icon: TrendingUp },
+  { title: "סימולטור תמחור", url: "/pricing-simulator" as const, icon: Calculator },
 ];
 
 export function AppSidebar() {
