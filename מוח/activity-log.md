@@ -29,3 +29,5 @@
 2026-06-09 — מימוש מלא מודול שיבוצים: 4 views, drag&drop, color coding, filters, double detection
 2026-06-09 Owner Dashboard שדרוג: Smart Alerts strip + גבייה חודשית + רווח נקי+מרווח% + פעולות מומלצות דינמיות (עד 5 פריטים, צבוע לפי דחיפות) + empty states עם CTA
 2026-06-09 — תיקון הרשאות אדמין: profiles.role עודכן ל-admin + use-auth race condition תוקן
+
+- 2026-06-09 — feat: self-service change-password for all roles (change-password-dialog.tsx + sidebar button)

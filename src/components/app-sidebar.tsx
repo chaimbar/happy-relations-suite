@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -12,7 +13,10 @@ import {
   ShieldCheck,
   Package,
   DollarSign,
+  KeyRound,
 } from "lucide-react";
+
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
 
 import {
   Sidebar,
@@ -47,6 +51,7 @@ const futureItems = [
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const { user, signOut, isAdmin } = useAuth();
+  const [pwOpen, setPwOpen] = useState(false);
 
   const isActive = (url: string) => currentPath === url || currentPath.startsWith(url + "/");
 
@@ -129,6 +134,15 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => setPwOpen(true)}
+          className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground justify-start"
+        >
+          <KeyRound className="h-4 w-4" />
+          <span className="group-data-[collapsible=icon]:hidden">שינוי סיסמה</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => void signOut()}
           className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground justify-start"
         >
@@ -136,6 +150,8 @@ export function AppSidebar() {
           <span className="group-data-[collapsible=icon]:hidden">התנתקות</span>
         </Button>
       </SidebarFooter>
+
+      <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
     </Sidebar>
   );
 }
