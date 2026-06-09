@@ -63,7 +63,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: true,
+        shouldCreateUser: false,
         emailRedirectTo: window.location.origin,
         data: fullName ? { full_name: fullName } : undefined,
       },
@@ -141,27 +141,17 @@ function AuthPage() {
             <CardDescription>התחבר או צור חשבון חדש</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="magic" dir="rtl">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="magic">קישור מאגי</TabsTrigger>
+            <Tabs defaultValue="signin" dir="rtl">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">התחברות</TabsTrigger>
-                <TabsTrigger value="signup">הרשמה</TabsTrigger>
+                <TabsTrigger value="magic">קישור מאגי</TabsTrigger>
               </TabsList>
 
-              {/* === MAGIC LINK === */}
+              {/* === MAGIC LINK (existing users only) === */}
               <TabsContent value="magic">
                 <form onSubmit={handleMagicLink} className="space-y-4 mt-4">
                   <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800 text-right">
-                    <strong>הכי פשוט:</strong> הזן אימייל ונשלח לך קישור כניסה — בלי סיסמה.
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="magic-name">שם מלא (לחשבון חדש)</Label>
-                    <Input
-                      id="magic-name"
-                      placeholder="השאר ריק אם כבר רשום"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
+                    הזן את האימייל שלך ונשלח לך קישור כניסה — רק למשתמשים קיימים.
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="magic-email">אימייל</Label>
@@ -179,7 +169,7 @@ function AuthPage() {
                     {loading ? "שולח..." : "שלח קישור לאימייל"}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    המשתמש הראשון מקבל אוטומטית הרשאת מנהל ראשי
+                    יצירת חשבונות חדשים מתבצעת רק על-ידי מנהל דרך עמוד "משתמשים".
                   </p>
                 </form>
               </TabsContent>
@@ -224,61 +214,6 @@ function AuthPage() {
                 </form>
               </TabsContent>
 
-              {/* === SIGN UP === */}
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">שם מלא</Label>
-                    <Input
-                      id="signup-name"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">אימייל</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      dir="ltr"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">סיסמה</Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        minLength={8}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      סיסמה חזקה: לפחות 8 תווים, אות גדולה, מספר וסימן.{" "}
-                      <span dir="ltr" className="font-mono">למשל: Admin@2024!</span>
-                    </p>
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? "נרשם..." : "צור חשבון"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    המשתמש הראשון מקבל אוטומטית הרשאת מנהל ראשי
-                  </p>
-                </form>
-              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>

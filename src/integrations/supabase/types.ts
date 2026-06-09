@@ -1,9 +1,3 @@
-// ─── Synced with live DB introspection 2026-06-09 ───────────────────────────
-// Tables: assignments, clients, employees, materials, notification_queue,
-//         payments, profiles, salary_records, sites, site_stages, user_roles
-// Views:  client_balance, salary_site_allocation, site_profitability,
-//         today_assignments
-
 export type Json =
   | string
   | number
@@ -13,551 +7,198 @@ export type Json =
   | Json[]
 
 export type Database = {
-  __InternalSupabase: { PostgrestVersion: "14.5" }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
-      assignments: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          employee_id: string
-          site_id: string
-          date: string
-          shift_type: Database["public"]["Enums"]["shift_type"]
-          cost_estimated: number | null
-          notes: string | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          employee_id: string
-          site_id: string
-          date: string
-          shift_type?: Database["public"]["Enums"]["shift_type"]
-          cost_estimated?: number | null
-          notes?: string | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          updated_at?: string
-          employee_id?: string
-          site_id?: string
-          date?: string
-          shift_type?: Database["public"]["Enums"]["shift_type"]
-          cost_estimated?: number | null
-          notes?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignments_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assignments_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       clients: {
         Row: {
-          id: string
+          address: string | null
           created_at: string
-          updated_at: string
-          full_name: string
-          phone: string | null
+          created_by: string | null
           email: string | null
+          id: string
+          name: string
           notes: string | null
-          user_id: string
+          phone: string | null
+          updated_at: string
         }
         Insert: {
-          id?: string
+          address?: string | null
           created_at?: string
-          updated_at?: string
-          full_name: string
-          phone?: string | null
+          created_by?: string | null
           email?: string | null
+          id?: string
+          name: string
           notes?: string | null
-          user_id: string
+          phone?: string | null
+          updated_at?: string
         }
         Update: {
-          id?: string
-          updated_at?: string
-          full_name?: string
-          phone?: string | null
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
           email?: string | null
+          id?: string
+          name?: string
           notes?: string | null
-          user_id?: string
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
       employees: {
         Row: {
-          id: string
           created_at: string
-          updated_at: string
+          created_by: string | null
+          daily_cost_estimate: number
           full_name: string
-          phone: string | null
-          id_number: string | null
-          status: Database["public"]["Enums"]["employee_status"]
-          daily_cost_estimated: number | null
-          timewatch_employee_id: string | null
-          notes: string | null
-          user_id: string
-          job_title: string | null
-          employment_type: string
-          start_date: string | null
+          id: string
+          identifier: string | null
           monthly_cost_actual: number | null
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          full_name: string
-          phone?: string | null
-          id_number?: string | null
-          status?: Database["public"]["Enums"]["employee_status"]
-          daily_cost_estimated?: number | null
-          timewatch_employee_id?: string | null
-          notes?: string | null
-          user_id: string
-          job_title?: string | null
-          employment_type?: string
-          start_date?: string | null
-          monthly_cost_actual?: number | null
-        }
-        Update: {
-          id?: string
-          updated_at?: string
-          full_name?: string
-          phone?: string | null
-          id_number?: string | null
-          status?: Database["public"]["Enums"]["employee_status"]
-          daily_cost_estimated?: number | null
-          timewatch_employee_id?: string | null
-          notes?: string | null
-          user_id?: string
-          job_title?: string | null
-          employment_type?: string
-          start_date?: string | null
-          monthly_cost_actual?: number | null
-        }
-        Relationships: []
-      }
-      materials: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          site_id: string
-          name: string
-          quantity: number | null
-          unit: string | null
-          unit_price: number | null
-          total_price: number
-          purchase_date: string | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          site_id: string
-          name: string
-          quantity?: number | null
-          unit?: string | null
-          unit_price?: number | null
-          total_price: number
-          purchase_date?: string | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          updated_at?: string
-          site_id?: string
-          name?: string
-          quantity?: number | null
-          unit?: string | null
-          unit_price?: number | null
-          total_price?: number
-          purchase_date?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "materials_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notification_queue: {
-        Row: {
-          id: string
-          channel: Database["public"]["Enums"]["notification_channel"]
-          recipient_email: string | null
-          recipient_phone: string | null
-          subject: string | null
-          body: string
-          event_type: string
-          event_data: Json | null
-          status: Database["public"]["Enums"]["notification_status"]
-          attempts: number
-          last_error: string | null
-          created_at: string
-          sent_at: string | null
-        }
-        Insert: {
-          id?: string
-          channel?: Database["public"]["Enums"]["notification_channel"]
-          recipient_email?: string | null
-          recipient_phone?: string | null
-          subject?: string | null
-          body: string
-          event_type: string
-          event_data?: Json | null
-          status?: Database["public"]["Enums"]["notification_status"]
-          attempts?: number
-          last_error?: string | null
-          created_at?: string
-          sent_at?: string | null
-        }
-        Update: {
-          id?: string
-          channel?: Database["public"]["Enums"]["notification_channel"]
-          recipient_email?: string | null
-          recipient_phone?: string | null
-          subject?: string | null
-          body?: string
-          event_type?: string
-          event_data?: Json | null
-          status?: Database["public"]["Enums"]["notification_status"]
-          attempts?: number
-          last_error?: string | null
-          sent_at?: string | null
-        }
-        Relationships: []
-      }
-      payments: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          client_id: string
-          site_id: string
-          amount: number
-          payment_date: string
-          payment_method: Database["public"]["Enums"]["payment_method"] | null
-          reference: string | null
           notes: string | null
-          user_id: string
+          phone: string | null
+          status: Database["public"]["Enums"]["employee_status"]
+          updated_at: string
         }
         Insert: {
-          id?: string
           created_at?: string
-          updated_at?: string
-          client_id: string
-          site_id: string
-          amount: number
-          payment_date: string
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
-          reference?: string | null
+          created_by?: string | null
+          daily_cost_estimate?: number
+          full_name: string
+          id?: string
+          identifier?: string | null
+          monthly_cost_actual?: number | null
           notes?: string | null
-          user_id: string
+          phone?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
+          daily_cost_estimate?: number
+          full_name?: string
           id?: string
-          updated_at?: string
-          client_id?: string
-          site_id?: string
-          amount?: number
-          payment_date?: string
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
-          reference?: string | null
+          identifier?: string | null
+          monthly_cost_actual?: number | null
           notes?: string | null
-          user_id?: string
+          phone?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "payments_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
-          id: string
           created_at: string
-          updated_at: string
           full_name: string | null
+          id: string
           phone: string | null
+          updated_at: string
         }
         Insert: {
-          id: string
           created_at?: string
-          updated_at?: string
           full_name?: string | null
+          id: string
           phone?: string | null
+          updated_at?: string
         }
         Update: {
-          id?: string
-          updated_at?: string
+          created_at?: string
           full_name?: string | null
+          id?: string
           phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
-      salary_records: {
+      projects: {
         Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          employee_id: string
-          site_id: string | null
-          month: string
-          amount_actual: number
-          timewatch_sync: boolean | null
-          notes: string | null
-          user_id: string
-          is_paid: boolean
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          employee_id: string
-          site_id?: string | null
-          month: string
-          amount_actual: number
-          timewatch_sync?: boolean | null
-          notes?: string | null
-          user_id: string
-          is_paid?: boolean
-        }
-        Update: {
-          id?: string
-          updated_at?: string
-          employee_id?: string
-          site_id?: string | null
-          month?: string
-          amount_actual?: number
-          timewatch_sync?: boolean | null
-          notes?: string | null
-          user_id?: string
-          is_paid?: boolean
-        }
-        Relationships: []
-      }
-      sites: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          name: string
-          client_id: string | null
           address: string | null
-          start_date: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
           end_date: string | null
-          contract_price: number
-          status: Database["public"]["Enums"]["site_status"]
+          has_drywall: boolean
+          id: string
           materials_cost: number
+          name: string
           notes: string | null
-          user_id: string
-          latitude: number | null
-          longitude: number | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          total_price: number
+          updated_at: string
         }
         Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          name: string
-          client_id?: string | null
           address?: string | null
-          start_date?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
           end_date?: string | null
-          contract_price?: number
-          status?: Database["public"]["Enums"]["site_status"]
+          has_drywall?: boolean
+          id?: string
           materials_cost?: number
+          name: string
           notes?: string | null
-          user_id: string
-          latitude?: number | null
-          longitude?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          total_price?: number
+          updated_at?: string
         }
         Update: {
-          id?: string
-          updated_at?: string
-          name?: string
-          client_id?: string | null
           address?: string | null
-          start_date?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
           end_date?: string | null
-          contract_price?: number
-          status?: Database["public"]["Enums"]["site_status"]
+          has_drywall?: boolean
+          id?: string
           materials_cost?: number
+          name?: string
           notes?: string | null
-          user_id?: string
-          latitude?: number | null
-          longitude?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          total_price?: number
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "sites_client_id_fkey"
+            foreignKeyName: "projects_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      site_stages: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          site_id: string
-          name: string
-          payment_amount: number | null
-          status: Database["public"]["Enums"]["stage_status"]
-          completed_at: string | null
-          notes: string | null
-          sort_order: number | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          site_id: string
-          name: string
-          payment_amount?: number | null
-          status?: Database["public"]["Enums"]["stage_status"]
-          completed_at?: string | null
-          notes?: string | null
-          sort_order?: number | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          updated_at?: string
-          site_id?: string
-          name?: string
-          payment_amount?: number | null
-          status?: Database["public"]["Enums"]["stage_status"]
-          completed_at?: string | null
-          notes?: string | null
-          sort_order?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "site_stages_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
       }
       user_roles: {
         Row: {
-          id: string
-          user_id: string
-          role: Database["public"]["Enums"]["app_role"]
           created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          role: Database["public"]["Enums"]["app_role"]
           created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          role?: Database["public"]["Enums"]["app_role"]
           created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
     }
     Views: {
-      client_balance: {
-        Row: {
-          id: string
-          full_name: string
-          phone: string | null
-          email: string | null
-          total_invoiced: number
-          total_paid: number
-          balance_due: number
-          total_sites: number
-        }
-        Relationships: []
-      }
-      salary_site_allocation: {
-        Row: {
-          salary_record_id: string
-          employee_id: string
-          month: string
-          amount_actual: number
-          site_id: string
-          days_in_month: number
-          days_on_site: number
-          allocated_amount: number
-        }
-        Relationships: []
-      }
-      site_profitability: {
-        Row: {
-          id: string
-          name: string
-          client_id: string | null
-          contract_price: number | null
-          materials_cost: number | null
-          status: string
-          labor_cost_estimated: number
-          labor_cost_actual: number
-          profit_estimated: number
-          profit_actual: number
-          cost_variance: number
-        }
-        Relationships: []
-      }
-      today_assignments: {
-        Row: {
-          id: string
-          date: string
-          shift_type: Database["public"]["Enums"]["shift_type"]
-          cost_estimated: number | null
-          employee_name: string
-          employee_phone: string | null
-          site_name: string
-          site_address: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       has_role: {
@@ -571,12 +212,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "team_manager" | "employee"
       employee_status: "active" | "inactive"
-      notification_channel: "email" | "whatsapp" | "both"
-      notification_status: "pending" | "sent" | "failed" | "skipped"
-      payment_method: "bank_transfer" | "check" | "cash" | "credit_card" | "other"
-      shift_type: "full" | "morning" | "afternoon"
-      site_status: "active" | "completed" | "paused" | "cancelled"
-      stage_status: "pending" | "in_progress" | "completed"
+      project_status: "active" | "completed" | "on_hold"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -706,12 +342,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "team_manager", "employee"],
       employee_status: ["active", "inactive"],
-      notification_channel: ["email", "whatsapp", "both"],
-      notification_status: ["pending", "sent", "failed", "skipped"],
-      payment_method: ["bank_transfer", "check", "cash", "credit_card", "other"],
-      shift_type: ["full", "morning", "afternoon"],
-      site_status: ["active", "completed", "paused", "cancelled"],
-      stage_status: ["pending", "in_progress", "completed"],
+      project_status: ["active", "completed", "on_hold"],
     },
   },
 } as const
