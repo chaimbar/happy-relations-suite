@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,6 +36,13 @@ type Client = {
   notes: string | null;
 };
 
+type ClientFinancials = {
+  siteCount: number;
+  totalPaid: number;
+  totalDebt: number;
+  totalContract: number;
+};
+
 const AVATAR_COLORS = [
   "bg-blue-100 text-blue-700",
   "bg-emerald-100 text-emerald-700",
@@ -59,6 +66,10 @@ function getAvatarColor(name: string | null | undefined) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+function fmt(n: number) {
+  return `₪${Number(n).toLocaleString("he-IL")}`;
+}
+
 function ClientsPage() {
   const qc = useQueryClient();
   const { isManager, isAdmin } = useAuth();
@@ -75,6 +86,54 @@ function ClientsPage() {
       return data as Client[];
     },
   });
+
+  // GAP-007: Fetch payment totals per client
+  const { data: paymentRows = [] } = useQuery({
+    queryKey: ["client-payment-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("client_id, total_amount, paid_amount");
+      if (error) throw error;
+      return data as { client_id: string; total_amount: number; paid_amount: number }[];
+    },
+  });
+
+  // GAP-007: Fetch site count per client
+  const { data: siteRows = [] } = useQuery({
+    queryKey: ["client-sites-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sites")
+        .select("id, client_id");
+      if (error) throw error;
+      return data as { id: string; client_id: string | null }[];
+    },
+  });
+
+  // GAP-007: Build per-client financial map
+  const clientFinancials = useMemo(() => {
+    const map = new Map<string, ClientFinancials>();
+
+    for (const p of paymentRows) {
+      if (!p.client_id) continue;
+      const cur = map.get(p.client_id) ?? { siteCount: 0, totalPaid: 0, totalDebt: 0, totalContract: 0 };
+      map.set(p.client_id, {
+        ...cur,
+        totalPaid: cur.totalPaid + Number(p.paid_amount),
+        totalDebt: cur.totalDebt + (Number(p.total_amount) - Number(p.paid_amount)),
+        totalContract: cur.totalContract + Number(p.total_amount),
+      });
+    }
+
+    for (const s of siteRows) {
+      if (!s.client_id) continue;
+      const cur = map.get(s.client_id) ?? { siteCount: 0, totalPaid: 0, totalDebt: 0, totalContract: 0 };
+      map.set(s.client_id, { ...cur, siteCount: cur.siteCount + 1 });
+    }
+
+    return map;
+  }, [paymentRows, siteRows]);
 
   const deleteM = useMutation({
     mutationFn: async (id: string) => {
@@ -187,6 +246,7 @@ function ClientsPage() {
               <ClientCard
                 key={c.id}
                 client={c}
+                financials={clientFinancials.get(c.id)}
                 isManager={isManager}
                 isAdmin={isAdmin}
                 onEdit={() => { setEditing(c); setDialogOpen(true); }}
@@ -203,6 +263,7 @@ function ClientsPage() {
 
 function ClientCard({
   client: c,
+  financials: fin,
   isManager,
   isAdmin,
   onEdit,
@@ -210,6 +271,7 @@ function ClientCard({
   isDeleting,
 }: {
   client: Client;
+  financials: ClientFinancials | undefined;
   isManager: boolean;
   isAdmin: boolean;
   onEdit: () => void;
@@ -218,6 +280,7 @@ function ClientCard({
 }) {
   const hasContact = c.phone || c.email || c.address;
   const avatarColor = getAvatarColor(c.name);
+  const hasFinancials = fin && (fin.totalContract > 0 || fin.siteCount > 0);
 
   return (
     <Card className="hover:shadow-md transition-shadow group">
@@ -327,6 +390,26 @@ function ClientCard({
         {/* Notes preview */}
         {c.notes && (
           <p className="mt-3 text-xs text-muted-foreground line-clamp-2 border-t pt-2">{c.notes}</p>
+        )}
+
+        {/* GAP-007: Financial Summary */}
+        {hasFinancials && (
+          <div className="mt-3 pt-2 border-t grid grid-cols-3 gap-1 text-center">
+            <div>
+              <p className="text-[10px] text-muted-foreground">אתרים</p>
+              <p className="text-sm font-semibold">{fin.siteCount}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">שולם</p>
+              <p className="text-sm font-semibold text-green-600">{fmt(fin.totalPaid)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">יתרה</p>
+              <p className={`text-sm font-semibold ${fin.totalDebt > 0 ? "text-destructive" : "text-green-600"}`}>
+                {fmt(fin.totalDebt)}
+              </p>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
