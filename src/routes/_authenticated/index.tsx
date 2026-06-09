@@ -28,15 +28,15 @@ function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const [emp, cli, proj, todayAssign, payments, profitability, monthlyPay] = await Promise.all([
+      const [emp, cli, proj, todayAssign, clientBalance, profitability, monthlyPay] = await Promise.all([
         supabase.from("employees").select("id, status"),
         supabase.from("clients").select("id", { count: "exact", head: true }),
-        supabase.from("sites").select("id, status, total_price"),
+        supabase.from("sites").select("id, status, contract_price"),
         supabase.from("assignments").select("id, employee_id").eq("date", today),
-        supabase.from("payments").select("total_amount, paid_amount, status"),
-        supabase.from("project_profitability").select("actual_profit, estimated_profit, total_price, balance_due, status"),
+        supabase.from("client_balance").select("balance_due"),
+        supabase.from("site_profitability").select("profit_actual, profit_estimated, contract_price, status"),
         supabase.from("payments")
-          .select("paid_amount")
+          .select("amount")
           .gte("payment_date", monthStart)
           .lte("payment_date", monthEnd),
       ]);
@@ -46,23 +46,23 @@ function Dashboard() {
       const todayEmployeeIds = new Set((todayAssign.data ?? []).map((a) => a.employee_id));
       const unassignedToday = activeEmployees.filter((e) => !todayEmployeeIds.has(e.id));
 
-      const totalDebt = (payments.data ?? []).reduce(
-        (s, p) => s + (Number(p.total_amount) - Number(p.paid_amount)), 0
+      const totalDebt = (clientBalance.data ?? []).reduce(
+        (s, c) => s + Math.max(0, Number(c.balance_due)), 0
       );
-      const openPayments = (payments.data ?? []).filter((p) => p.status !== "paid").length;
+      const openPayments = (clientBalance.data ?? []).filter((c) => Number(c.balance_due) > 0).length;
 
       const profRows = profitability.data ?? [];
-      const totalRevenue = profRows.reduce((s, r) => s + Number(r.total_price ?? 0), 0);
+      const totalRevenue = profRows.reduce((s, r) => s + Number(r.contract_price ?? 0), 0);
       const totalProfit = profRows.reduce(
-        (s, r) => s + Number(r.actual_profit ?? r.estimated_profit ?? 0), 0
+        (s, r) => s + Number(r.profit_actual ?? r.profit_estimated ?? 0), 0
       );
       const lossProjects = profRows.filter(
-        (r) => Number(r.actual_profit ?? r.estimated_profit ?? 0) < 0
+        (r) => Number(r.profit_actual ?? r.profit_estimated ?? 0) < 0
       ).length;
       const profitMargin = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 100) : 0;
 
       const monthlyCollected = (monthlyPay.data ?? []).reduce(
-        (s, p) => s + Number(p.paid_amount), 0
+        (s, p) => s + Number(p.amount), 0
       );
 
       return {
@@ -101,12 +101,12 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sites")
-        .select("id, name, status, total_price, materials_cost")
+        .select("id, name, status, contract_price, materials_cost")
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(5);
       if (error) throw error;
-      return data as { id: string; name: string; status: string; total_price: number; materials_cost: number }[];
+      return data as { id: string; name: string; status: string; contract_price: number; materials_cost: number }[];
     },
   });
 
@@ -126,11 +126,11 @@ function Dashboard() {
   if ((stats?.totalDebt ?? 0) > 0)
     actions.push({ label: `גבה ${fmt(stats!.totalDebt)} מלקוחות`, to: "/payments", urgency: stats!.totalDebt > 5000 ? "high" : "medium" });
   if ((stats?.lossProjects ?? 0) > 0)
-    actions.push({ label: `בדוק ${stats!.lossProjects} פרויקטים בהפסד`, to: "/profitability", urgency: "high" });
+    actions.push({ label: `בדוק ${stats!.lossProjects} אתרים בהפסד`, to: "/profitability", urgency: "high" });
   if ((stats?.openPayments ?? 0) > 2 && (stats?.totalDebt ?? 0) === 0)
-    actions.push({ label: `${stats!.openPayments} תשלומים פתוחים לטיפול`, to: "/payments", urgency: "medium" });
+    actions.push({ label: `${stats!.openPayments} לקוחות עם יתרת חוב`, to: "/payments", urgency: "medium" });
   if (actions.length < 3)
-    actions.push({ label: "בדוק רווחיות פרויקטים", to: "/profitability", urgency: "low" });
+    actions.push({ label: "בדוק רווחיות אתרים", to: "/profitability", urgency: "low" });
   if (actions.length < 3)
     actions.push({ label: "עדכן שיבוצים לשבוע הבא", to: "/scheduling", urgency: "low" });
 
@@ -270,7 +270,7 @@ function Dashboard() {
                 <p className={`text-2xl font-bold ${(stats?.totalDebt ?? 0) > 0 ? "text-destructive" : "text-green-600"}`}>
                   {stats ? fmt(stats.totalDebt) : "—"}
                 </p>
-                <p className="text-xs text-muted-foreground">{stats?.openPayments ?? 0} תשלומים ממתינים</p>
+                <p className="text-xs text-muted-foreground">{stats?.openPayments ?? 0} לקוחות עם חוב</p>
               </div>
             </CardContent>
           </Card>
@@ -369,12 +369,12 @@ function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {recentProjects.map((p) => {
-                  const profit = Number(p.total_price) - Number(p.materials_cost);
+                  const profit = Number(p.contract_price) - Number(p.materials_cost);
                   return (
                     <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/40">
                       <span className="font-medium text-sm truncate flex-1 me-2">{p.name}</span>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-muted-foreground">{fmt(p.total_price)}</span>
+                        <span className="text-xs text-muted-foreground">{fmt(p.contract_price)}</span>
                         <span className={`text-xs font-semibold ${profit >= 0 ? "text-green-600" : "text-destructive"}`}>
                           {fmt(profit)}
                         </span>

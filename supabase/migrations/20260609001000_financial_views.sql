@@ -1,96 +1,17 @@
 -- =============================================================
--- Financial Views — GAP-005 / GAP-008 / GAP-010 / GAP-019 / GAP-024
+-- Financial Views — Session 2 (GAP-005 / GAP-008 / GAP-010)
 -- =============================================================
--- Context:
---   The live DB was provisioned by Lovable with `sites` (not `projects`),
---   `site_id` (not `project_id` in assignments), `cost_estimated`
---   (not `cost_snapshot`), and `salary_records` (not `salaries`).
---   The original view was broken — it targeted `public.projects`
---   and `assignments.cost_snapshot`, neither of which exists.
+-- NOTE: `site_profitability`, `client_balance`, and `today_assignments`
+-- were already created by Lovable in the initial setup.
+-- This migration ONLY adds the new `salary_site_allocation` view.
+-- DO NOT recreate the existing views — they already exist and work correctly.
 -- =============================================================
 
 -- ─────────────────────────────────────────────────────────────
--- 1. Rebuild project_profitability (targets sites, not projects)
--- ─────────────────────────────────────────────────────────────
-DROP VIEW IF EXISTS public.project_profitability;
-
-CREATE OR REPLACE VIEW public.project_profitability AS
-SELECT
-  s.id,
-  s.name,
-  s.client_id,
-  s.total_price,
-  s.materials_cost,
-  s.status::text                                          AS status,
-
-  -- Estimated labor cost (sum of daily cost_estimated per assignment)
-  COALESCE((
-    SELECT SUM(a.cost_estimated)
-    FROM public.assignments a
-    WHERE a.site_id = s.id
-  ), 0)                                                   AS estimated_labor_cost,
-
-  -- Estimated profit
-  s.total_price
-    - s.materials_cost
-    - COALESCE((
-        SELECT SUM(a.cost_estimated)
-        FROM public.assignments a
-        WHERE a.site_id = s.id
-      ), 0)                                               AS estimated_profit,
-
-  -- Actual labor cost (salary_records directly linked to this site)
-  COALESCE((
-    SELECT SUM(sr.amount_actual)
-    FROM public.salary_records sr
-    WHERE sr.site_id = s.id
-  ), 0)                                                   AS actual_labor_cost,
-
-  -- Actual profit
-  s.total_price
-    - s.materials_cost
-    - COALESCE((
-        SELECT SUM(sr.amount_actual)
-        FROM public.salary_records sr
-        WHERE sr.site_id = s.id
-      ), 0)                                               AS actual_profit,
-
-  -- Labor variance: actual − estimated (positive = over budget)
-  COALESCE((
-    SELECT SUM(sr.amount_actual)
-    FROM public.salary_records sr
-    WHERE sr.site_id = s.id
-  ), 0)
-  - COALESCE((
-      SELECT SUM(a.cost_estimated)
-      FROM public.assignments a
-      WHERE a.site_id = s.id
-    ), 0)                                                 AS labor_variance,
-
-  -- Total collected from payments (payments.project_id → sites.id in live DB)
-  COALESCE((
-    SELECT SUM(pay.paid_amount)
-    FROM public.payments pay
-    WHERE pay.project_id = s.id
-  ), 0)                                                   AS total_collected,
-
-  -- Balance due
-  s.total_price - COALESCE((
-    SELECT SUM(pay.paid_amount)
-    FROM public.payments pay
-    WHERE pay.project_id = s.id
-  ), 0)                                                   AS balance_due
-
-FROM public.sites s;
-
-GRANT SELECT ON public.project_profitability TO authenticated;
-GRANT SELECT ON public.project_profitability TO service_role;
-
--- ─────────────────────────────────────────────────────────────
--- 2. salary_site_allocation
---    Proportionally splits a salary_record across sites based
---    on how many assignment-days the employee worked per site
---    in that month.  Used when salary_records.site_id IS NULL.
+-- salary_site_allocation
+--   Proportionally splits unlinked salary_records across sites
+--   based on how many assignment-days the employee worked per
+--   site in that month.  Used when salary_records.site_id IS NULL.
 -- ─────────────────────────────────────────────────────────────
 DROP VIEW IF EXISTS public.salary_site_allocation;
 
