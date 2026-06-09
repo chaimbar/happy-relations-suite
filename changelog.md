@@ -26,3 +26,5 @@
 2026-06-09 — שיבוצים מלא: GAP-001 Drag&Drop, GAP-009 Daily View, GAP-017 Site View, GAP-020 Employee View, GAP-026 Double Detection + Color Coding + Filters
 
 2026-06-09 feat(dashboard): Owner Dashboard שדרוג — Smart Alerts, גבייה חודשית, רווח נקי+מרווח%, פעולות מומלצות דינמיות, empty states עם CTA
+ — תיקון הרשאות אדמין: עדכון profiles.role ל-admin עבור chaimb407@gmail.com + תיקון race condition ב-useAuth (setLoading ממתין ל-fetchRoles)
+2026-06-09 — תיקון הרשאות אדמין: עדכון profiles.role ל-admin עבור chaimb407@gmail.com + תיקון race condition ב-useAuth (setLoading ממתין ל-fetchRoles)

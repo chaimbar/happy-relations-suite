@@ -28,3 +28,4 @@
 2026-06-09 — Security: הוחלה מיגרציה 20260609003000 — GAP-014 (team_manager isolation), GAP-003 (audit triggers), GAP-002 (notification_queue + Edge Function)
 2026-06-09 — מימוש מלא מודול שיבוצים: 4 views, drag&drop, color coding, filters, double detection
 2026-06-09 Owner Dashboard שדרוג: Smart Alerts strip + גבייה חודשית + רווח נקי+מרווח% + פעולות מומלצות דינמיות (עד 5 פריטים, צבוע לפי דחיפות) + empty states עם CTA
+2026-06-09 — תיקון הרשאות אדמין: profiles.role עודכן ל-admin + use-auth race condition תוקן
