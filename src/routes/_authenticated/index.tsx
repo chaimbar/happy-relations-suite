@@ -25,7 +25,7 @@ function Dashboard() {
       const [emp, cli, proj, todayAssign, payments] = await Promise.all([
         supabase.from("employees").select("id, status"),
         supabase.from("clients").select("id", { count: "exact", head: true }),
-        supabase.from("projects").select("id, status, total_price"),
+        supabase.from("sites").select("id, status, total_price"),
         supabase.from("assignments").select("id, employee_id").eq("date", today),
         supabase.from("payments").select("total_amount, paid_amount, status"),
       ]);
@@ -61,18 +61,18 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assignments")
-        .select("id, employees(full_name), projects(name)")
+        .select("id, employees(full_name), sites(name)")
         .eq("date", today);
       if (error) throw error;
-      return data as { id: string; employees: { full_name: string }; projects: { name: string } }[];
+      return data as { id: string; employees: { full_name: string }; sites: { name: string } }[];
     },
   });
 
   const { data: recentProjects = [] } = useQuery({
-    queryKey: ["recent-projects"],
+    queryKey: ["recent-sites"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("projects")
+        .from("sites")
         .select("id, name, status, total_price, materials_cost")
         .eq("status", "active")
         .order("created_at", { ascending: false })
@@ -223,7 +223,7 @@ function Dashboard() {
                 {todayList.map((a) => (
                   <div key={a.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/40">
                     <span className="font-medium text-sm">{a.employees.full_name}</span>
-                    <Badge variant="outline" className="text-xs">{a.projects.name}</Badge>
+                    <Badge variant="outline" className="text-xs">{a.sites.name}</Badge>
                   </div>
                 ))}
               </div>

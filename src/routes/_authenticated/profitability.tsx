@@ -22,6 +22,9 @@ type ProfRow = {
   status: string;
   estimated_labor_cost: number;
   estimated_profit: number;
+  actual_labor_cost: number;
+  actual_profit: number;
+  labor_variance: number;
   total_collected: number;
   balance_due: number;
 };
@@ -55,8 +58,8 @@ function ProfitabilityPage() {
 
   const activeRows = rows.filter((r) => r.status === "active");
   const totalRevenue = rows.reduce((s, r) => s + Number(r.total_price), 0);
-  const totalProfit = rows.reduce((s, r) => s + Number(r.estimated_profit), 0);
-  const totalLaborCost = rows.reduce((s, r) => s + Number(r.estimated_labor_cost), 0);
+  const totalProfit = rows.reduce((s, r) => s + Number(r.actual_profit ?? r.estimated_profit), 0);
+  const totalLaborCost = rows.reduce((s, r) => s + Number(r.actual_labor_cost ?? r.estimated_labor_cost), 0);
   const totalMaterials = rows.reduce((s, r) => s + Number(r.materials_cost), 0);
   const totalDebt = rows.reduce((s, r) => s + Number(r.balance_due), 0);
 
@@ -173,29 +176,46 @@ function ProfitabilityPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30 text-xs text-muted-foreground uppercase">
-                    <th className="text-right px-4 py-3 font-medium">פרויקט</th>
+                    <th className="text-right px-4 py-3 font-medium">אתר</th>
                     <th className="text-right px-4 py-3 font-medium">לקוח</th>
                     <th className="text-right px-4 py-3 font-medium">הכנסה</th>
-                    <th className="text-right px-4 py-3 font-medium">עלות עובדים</th>
+                    <th className="text-right px-4 py-3 font-medium">עלות עובדים משוערת</th>
+                    <th className="text-right px-4 py-3 font-medium">עלות בפועל</th>
+                    <th className="text-right px-4 py-3 font-medium">סטייה</th>
                     <th className="text-right px-4 py-3 font-medium">חומרים</th>
-                    <th className="text-right px-4 py-3 font-medium">רווח משוער</th>
+                    <th className="text-right px-4 py-3 font-medium">רווח בפועל</th>
                     <th className="text-right px-4 py-3 font-medium">יתרת חוב</th>
                     <th className="text-right px-4 py-3 font-medium">סטטוס</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r, i) => {
-                    const profitPct = r.total_price > 0 ? Math.round((Number(r.estimated_profit) / Number(r.total_price)) * 100) : 0;
+                    const actualProfit = Number(r.actual_profit ?? r.estimated_profit);
+                    const profitPct = r.total_price > 0 ? Math.round((actualProfit / Number(r.total_price)) * 100) : 0;
+                    const variance = Number(r.labor_variance ?? 0);
+                    const statusLabel =
+                      r.status === "active" ? "פעיל" :
+                      r.status === "completed" ? "הסתיים" :
+                      r.status === "paused" ? "מושהה" : "בוטל";
                     return (
                       <tr key={r.id} className={`border-b hover:bg-muted/20 transition-colors ${i % 2 === 0 ? "" : "bg-muted/5"}`}>
                         <td className="px-4 py-3 font-medium">{r.name}</td>
                         <td className="px-4 py-3 text-muted-foreground">{r.client_id ? clientMap.get(r.client_id) ?? "—" : "—"}</td>
                         <td className="px-4 py-3">{fmt(r.total_price)}</td>
-                        <td className="px-4 py-3">{fmt(r.estimated_labor_cost)}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{fmt(r.estimated_labor_cost)}</td>
+                        <td className="px-4 py-3">{fmt(r.actual_labor_cost ?? r.estimated_labor_cost)}</td>
+                        <td className="px-4 py-3">
+                          {variance !== 0 && (
+                            <span className={`text-xs font-medium ${variance > 0 ? "text-destructive" : "text-green-600"}`}>
+                              {variance > 0 ? "+" : ""}{fmt(variance)}
+                            </span>
+                          )}
+                          {variance === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                        </td>
                         <td className="px-4 py-3">{fmt(r.materials_cost)}</td>
                         <td className="px-4 py-3">
-                          <span className={`font-semibold ${Number(r.estimated_profit) >= 0 ? "text-green-600" : "text-destructive"}`}>
-                            {fmt(r.estimated_profit)}
+                          <span className={`font-semibold ${actualProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
+                            {fmt(actualProfit)}
                           </span>
                           <span className="text-xs text-muted-foreground ms-1">({profitPct}%)</span>
                         </td>
@@ -206,7 +226,7 @@ function ProfitabilityPage() {
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant={r.status === "active" ? "default" : r.status === "completed" ? "secondary" : "outline"} className="text-xs">
-                            {r.status === "active" ? "פעיל" : r.status === "completed" ? "הסתיים" : "מושהה"}
+                            {statusLabel}
                           </Badge>
                         </td>
                       </tr>
