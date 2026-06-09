@@ -29,16 +29,17 @@ export const Route = createFileRoute("/_authenticated/scheduling")({
   component: SchedulingPage,
 });
 
-type Employee = { id: string; full_name: string; status: string; daily_cost_estimate: number };
-type Project = { id: string; name: string; status: string };
+type Employee = { id: string; full_name: string; status: string; daily_cost_estimated: number };
+type Site = { id: string; name: string; status: string };
 type Assignment = {
   id: string;
   employee_id: string;
-  project_id: string;
+  site_id: string;
   date: string;
-  cost_snapshot: number;
+  shift_type: "full" | "morning" | "afternoon";
+  cost_estimated: number | null;
   employees: { full_name: string };
-  projects: { name: string };
+  sites: { name: string };
 };
 
 function SchedulingPage() {
@@ -56,7 +57,7 @@ function SchedulingPage() {
       const to = format(addDays(weekStart, 6), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("assignments")
-        .select("*, employees(full_name), projects(name)")
+        .select("*, employees(full_name), sites(name)")
         .gte("date", from)
         .lte("date", to)
         .order("date");
@@ -70,7 +71,7 @@ function SchedulingPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
-        .select("id, full_name, status, daily_cost_estimate")
+        .select("id, full_name, status, daily_cost_estimated")
         .eq("status", "active")
         .order("full_name");
       if (error) throw error;
@@ -78,16 +79,16 @@ function SchedulingPage() {
     },
   });
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ["projects-active"],
+  const { data: sites = [] } = useQuery({
+    queryKey: ["sites-active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("projects")
+        .from("sites")
         .select("id, name, status")
         .eq("status", "active")
         .order("name");
       if (error) throw error;
-      return data as Project[];
+      return data as Site[];
     },
   });
 
@@ -165,7 +166,7 @@ function SchedulingPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">אתרים פעילים</p>
-              <p className="text-xl font-bold">{projects.length}</p>
+              <p className="text-xl font-bold">{sites.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -220,7 +221,7 @@ function SchedulingPage() {
                 >
                   <div className="min-w-0">
                     <p className="font-medium truncate">{a.employees.full_name}</p>
-                    <p className="text-muted-foreground truncate">{a.projects.name}</p>
+                    <p className="text-muted-foreground truncate">{a.sites.name}</p>
                   </div>
                   {isManager && (
                     <AlertDialog>
@@ -233,7 +234,7 @@ function SchedulingPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>הסר שיבוץ?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {a.employees.full_name} ← {a.projects.name}
+                            {a.employees.full_name} ← {a.sites.name}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -269,7 +270,7 @@ function SchedulingPage() {
         open={addDialog.open}
         defaultDate={addDialog.date}
         employees={employees}
-        projects={projects}
+        sites={sites}
         onClose={() => setAddDialog({ open: false })}
         onSuccess={() => {
           qc.invalidateQueries({ queryKey: ["assignments"] });
@@ -281,18 +282,18 @@ function SchedulingPage() {
 }
 
 function AddAssignmentDialog({
-  open, defaultDate, employees, projects, onClose, onSuccess,
+  open, defaultDate, employees, sites, onClose, onSuccess,
 }: {
   open: boolean;
   defaultDate?: string;
   employees: Employee[];
-  projects: Project[];
+  sites: Site[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
   const [form, setForm] = useState({
     employee_id: "",
-    project_id: "",
+    site_id: "",
     date: defaultDate ?? format(new Date(), "yyyy-MM-dd"),
   });
 
@@ -302,10 +303,10 @@ function AddAssignmentDialog({
       const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from("assignments").insert({
         employee_id: form.employee_id,
-        project_id: form.project_id,
+        site_id: form.site_id,
         date: form.date,
-        cost_snapshot: emp?.daily_cost_estimate ?? 0,
-        created_by: u.user?.id,
+        cost_estimated: emp?.daily_cost_estimated ?? 0,
+        user_id: u.user!.id,
       });
       if (error) throw error;
     },
@@ -342,7 +343,7 @@ function AddAssignmentDialog({
               <SelectContent>
                 {employees.map((e) => (
                   <SelectItem key={e.id} value={e.id}>
-                    {e.full_name} — ₪{e.daily_cost_estimate}/יום
+                    {e.full_name} — ₪{e.daily_cost_estimated}/יום
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -350,18 +351,18 @@ function AddAssignmentDialog({
           </div>
           <div className="space-y-2">
             <Label>אתר</Label>
-            <Select required value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v })}>
+            <Select required value={form.site_id} onValueChange={(v) => setForm({ ...form, site_id: v })}>
               <SelectTrigger><SelectValue placeholder="בחר אתר" /></SelectTrigger>
               <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                {sites.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ביטול</Button>
-            <Button type="submit" disabled={saveM.isPending || !form.employee_id || !form.project_id}>
+            <Button type="submit" disabled={saveM.isPending || !form.employee_id || !form.site_id}>
               {saveM.isPending ? "שומר..." : "שבץ"}
             </Button>
           </DialogFooter>
