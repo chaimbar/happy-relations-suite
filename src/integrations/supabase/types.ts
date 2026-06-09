@@ -53,54 +53,42 @@ export type Database = {
       employees: {
         Row: {
           created_at: string
-          daily_cost_estimated: number | null
-          employment_type: string
+          created_by: string | null
+          daily_cost_estimate: number
           full_name: string
           id: string
-          id_number: string | null
-          job_title: string | null
+          identifier: string | null
           monthly_cost_actual: number | null
           notes: string | null
           phone: string | null
-          start_date: string | null
           status: Database["public"]["Enums"]["employee_status"]
-          timewatch_employee_id: string | null
           updated_at: string
-          user_id: string
         }
         Insert: {
           created_at?: string
-          daily_cost_estimated?: number | null
-          employment_type?: string
+          created_by?: string | null
+          daily_cost_estimate?: number
           full_name: string
           id?: string
-          id_number?: string | null
-          job_title?: string | null
+          identifier?: string | null
           monthly_cost_actual?: number | null
           notes?: string | null
           phone?: string | null
-          start_date?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
-          timewatch_employee_id?: string | null
           updated_at?: string
-          user_id: string
         }
         Update: {
           created_at?: string
-          daily_cost_estimated?: number | null
-          employment_type?: string
+          created_by?: string | null
+          daily_cost_estimate?: number
           full_name?: string
           id?: string
-          id_number?: string | null
-          job_title?: string | null
+          identifier?: string | null
           monthly_cost_actual?: number | null
           notes?: string | null
           phone?: string | null
-          start_date?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
-          timewatch_employee_id?: string | null
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -208,227 +196,9 @@ export type Database = {
         }
         Relationships: []
       }
-      assignments: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          employee_id: string
-          site_id: string
-          date: string
-          shift_type: Database["public"]["Enums"]["shift_type"]
-          cost_estimated: number | null
-          notes: string | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          employee_id: string
-          site_id: string
-          date: string
-          shift_type?: Database["public"]["Enums"]["shift_type"]
-          cost_estimated?: number | null
-          notes?: string | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          employee_id?: string
-          site_id?: string
-          date?: string
-          shift_type?: Database["public"]["Enums"]["shift_type"]
-          cost_estimated?: number | null
-          notes?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignments_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assignments_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_stages: {
-        Row: {
-          id: string
-          project_id: string
-          name: string
-          payment_amount: number
-          payment_status: Database["public"]["Enums"]["payment_status"]
-          sort_order: number
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          name: string
-          payment_amount?: number
-          payment_status?: Database["public"]["Enums"]["payment_status"]
-          sort_order?: number
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          name?: string
-          payment_amount?: number
-          payment_status?: Database["public"]["Enums"]["payment_status"]
-          sort_order?: number
-          notes?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      materials: {
-        Row: {
-          id: string
-          project_id: string
-          name: string
-          quantity: number
-          unit_price: number
-          total_price: number
-          notes: string | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          name: string
-          quantity?: number
-          unit_price?: number
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          name?: string
-          quantity?: number
-          unit_price?: number
-          notes?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      payments: {
-        Row: {
-          id: string
-          client_id: string
-          project_id: string
-          total_amount: number
-          paid_amount: number
-          status: Database["public"]["Enums"]["payment_status"]
-          payment_date: string | null
-          notes: string | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          client_id: string
-          project_id: string
-          total_amount?: number
-          paid_amount?: number
-          status?: Database["public"]["Enums"]["payment_status"]
-          payment_date?: string | null
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          client_id?: string
-          project_id?: string
-          total_amount?: number
-          paid_amount?: number
-          status?: Database["public"]["Enums"]["payment_status"]
-          payment_date?: string | null
-          notes?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      salary_records: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          employee_id: string
-          site_id: string | null
-          month: string
-          amount_actual: number
-          timewatch_sync: boolean | null
-          is_paid: boolean
-          notes: string | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          employee_id: string
-          site_id?: string | null
-          month: string
-          amount_actual: number
-          timewatch_sync?: boolean | null
-          is_paid?: boolean
-          notes?: string | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          employee_id?: string
-          site_id?: string | null
-          month?: string
-          amount_actual?: number
-          timewatch_sync?: boolean | null
-          is_paid?: boolean
-          notes?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
-      project_profitability: {
-        Row: {
-          id: string
-          name: string
-          client_id: string | null
-          total_price: number
-          materials_cost: number
-          status: string
-          estimated_labor_cost: number
-          estimated_profit: number
-          total_collected: number
-          balance_due: number
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       has_role: {
@@ -442,9 +212,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "team_manager" | "employee"
       employee_status: "active" | "inactive"
-      payment_method: "bank_transfer" | "check" | "cash" | "credit_card" | "other"
-      shift_type: "full" | "morning" | "afternoon"
-      site_status: "active" | "completed" | "paused" | "cancelled"
+      project_status: "active" | "completed" | "on_hold"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -574,9 +342,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "team_manager", "employee"],
       employee_status: ["active", "inactive"],
-      payment_method: ["bank_transfer", "check", "cash", "credit_card", "other"],
-      shift_type: ["full", "morning", "afternoon"],
-      site_status: ["active", "completed", "paused", "cancelled"],
+      project_status: ["active", "completed", "on_hold"],
     },
   },
 } as const
