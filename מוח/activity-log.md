@@ -23,3 +23,4 @@
 2026-06-08 22:55 | GAP-011/012/013 Schema Fix — types.ts + employees.tsx מסונכרנים עם DB האמיתי (Lovable). תוקנו: salary_records, assignments, employees, enums.
 2026-06-09 — תוקן scheduling.tsx: החלפת כל קריאות DB שגויות לסכמה הנכונה. push לגיטהב.
 2026-06-09 — סשן 2: financial module + types.ts rewrite + views migration. push לגיטהב.
+2026-06-09 — GAP-007/018/023: Client financial analytics on card + payments by site expandable + advanced filters (status chips + client dropdown). push לגיטהב.
