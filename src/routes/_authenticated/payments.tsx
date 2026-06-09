@@ -626,6 +626,7 @@ function PaymentDialog({
   const saveM = useMutation({
     mutationFn: async () => {
       const payload = {
+        client_id: form.client_id,
         site_id: form.site_id,
         amount: Number(form.amount),
         payment_date: form.payment_date,

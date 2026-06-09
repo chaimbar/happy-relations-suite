@@ -17,6 +17,7 @@ import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedProfitabilityRouteImport } from './routes/_authenticated/profitability'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
+import { Route as AuthenticatedSalariesRouteImport } from './routes/_authenticated/salaries'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
@@ -61,6 +62,11 @@ const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSalariesRoute = AuthenticatedSalariesRouteImport.update({
+  id: '/salaries',
+  path: '/salaries',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profitability': typeof AuthenticatedProfitabilityRoute
   '/projects': typeof AuthenticatedProjectsRoute
+  '/salaries': typeof AuthenticatedSalariesRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
   '/users': typeof AuthenticatedUsersRoute
 }
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/profitability': typeof AuthenticatedProfitabilityRoute
   '/projects': typeof AuthenticatedProjectsRoute
+  '/salaries': typeof AuthenticatedSalariesRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
   '/users': typeof AuthenticatedUsersRoute
   '/': typeof AuthenticatedIndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profitability': typeof AuthenticatedProfitabilityRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
+  '/_authenticated/salaries': typeof AuthenticatedSalariesRoute
   '/_authenticated/scheduling': typeof AuthenticatedSchedulingRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/payments'
     | '/profitability'
     | '/projects'
+    | '/salaries'
     | '/scheduling'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/payments'
     | '/profitability'
     | '/projects'
+    | '/salaries'
     | '/scheduling'
     | '/users'
     | '/'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/payments'
     | '/_authenticated/profitability'
     | '/_authenticated/projects'
+    | '/_authenticated/salaries'
     | '/_authenticated/scheduling'
     | '/_authenticated/users'
     | '/_authenticated/'
@@ -188,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/salaries': {
+      id: '/_authenticated/salaries'
+      path: '/salaries'
+      fullPath: '/salaries'
+      preLoaderRoute: typeof AuthenticatedSalariesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/scheduling': {
@@ -249,6 +268,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfitabilityRoute: typeof AuthenticatedProfitabilityRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
+  AuthenticatedSalariesRoute: typeof AuthenticatedSalariesRoute
   AuthenticatedSchedulingRoute: typeof AuthenticatedSchedulingRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -261,6 +281,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfitabilityRoute: AuthenticatedProfitabilityRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
+  AuthenticatedSalariesRoute: AuthenticatedSalariesRoute,
   AuthenticatedSchedulingRoute: AuthenticatedSchedulingRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

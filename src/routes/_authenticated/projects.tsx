@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, MapPin, Search, Calendar as CalIcon, Building2 } from "lucide-react";
+import {
+  Plus, Pencil, Trash2, MapPin, Search, Calendar as CalIcon, Building2,
+  ChevronDown, ChevronUp, CheckCircle2, Circle, Clock, DollarSign,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +44,17 @@ type Project = {
   notes: string | null;
 };
 
+type Stage = {
+  id: string;
+  site_id: string;
+  name: string;
+  payment_amount: number | null;
+  status: "pending" | "in_progress" | "completed";
+  completed_at: string | null;
+  notes: string | null;
+  sort_order: number | null;
+};
+
 type ClientLite = { id: string; full_name: string };
 
 const STATUS_LABEL: Record<Project["status"], { label: string; variant: "default" | "secondary" | "outline" }> = {
@@ -58,6 +72,24 @@ const STATUS_FILTERS: { value: Project["status"] | "all"; label: string }[] = [
   { value: "cancelled", label: "בוטל" },
 ];
 
+const STAGE_STATUS_LABELS: Record<Stage["status"], { label: string; icon: typeof Circle }> = {
+  pending:     { label: "ממתין",    icon: Circle },
+  in_progress: { label: "בביצוע",   icon: Clock },
+  completed:   { label: "הושלם",    icon: CheckCircle2 },
+};
+
+const STAGE_STATUS_COLORS: Record<Stage["status"], string> = {
+  pending:     "text-muted-foreground",
+  in_progress: "text-amber-600",
+  completed:   "text-green-600",
+};
+
+const PRESET_STAGES = ["שחור", "לבן", "גבס", "פינישים", "חוץ", "גגות", "ריצוף"];
+
+function fmt(n: number) {
+  return `₪${Number(n).toLocaleString("he-IL")}`;
+}
+
 function ProjectsPage() {
   const qc = useQueryClient();
   const { isManager, isAdmin } = useAuth();
@@ -65,6 +97,7 @@ function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<Project["status"] | "all">("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
+  const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set());
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
@@ -85,7 +118,22 @@ function ProjectsPage() {
     },
   });
 
+  const { data: allStages = [] } = useQuery({
+    queryKey: ["all-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_stages").select("*").order("sort_order").order("created_at");
+      if (error) throw error;
+      return data as Stage[];
+    },
+  });
+
   const clientMap = new Map(clients.map((c) => [c.id, c.full_name]));
+  const stagesBySite = new Map<string, Stage[]>();
+  for (const s of allStages) {
+    if (!stagesBySite.has(s.site_id)) stagesBySite.set(s.site_id, []);
+    stagesBySite.get(s.site_id)!.push(s);
+  }
 
   const deleteM = useMutation({
     mutationFn: async (id: string) => {
@@ -106,6 +154,13 @@ function ProjectsPage() {
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const toggleStages = (id: string) =>
+    setExpandedStages((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
 
   return (
     <div className="space-y-5">
@@ -179,15 +234,8 @@ function ProjectsPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-5 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                  <Skeleton className="h-8 w-16" />
-                </div>
+                <Skeleton className="h-5 w-40" />
                 <Skeleton className="h-4 w-56" />
-                <Skeleton className="h-4 w-44" />
                 <div className="pt-3 border-t grid grid-cols-3 gap-2">
                   <Skeleton className="h-10" />
                   <Skeleton className="h-10" />
@@ -208,19 +256,13 @@ function ProjectsPage() {
             {search || statusFilter !== "all" ? (
               <>
                 <p className="text-base font-medium">לא נמצאו אתרים תואמים</p>
-                <p className="text-sm text-muted-foreground mt-1">נסה לשנות את החיפוש או הפילטר</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => { setSearch(""); setStatusFilter("all"); }}
-                >
+                <Button variant="outline" className="mt-4" onClick={() => { setSearch(""); setStatusFilter("all"); }}>
                   נקה פילטרים
                 </Button>
               </>
             ) : (
               <>
                 <p className="text-base font-medium">אין אתרים עדיין</p>
-                <p className="text-sm text-muted-foreground mt-1">הוסף את האתר הראשון כדי להתחיל</p>
                 {isManager && (
                   <Button className="mt-4" onClick={() => setDialogOpen(true)}>
                     <Plus className="h-4 w-4" /> הוסף אתר ראשון
@@ -235,24 +277,29 @@ function ProjectsPage() {
           {filtered.map((p) => {
             const status = STATUS_LABEL[p.status];
             const profitEstimate = Number(p.contract_price) - Number(p.materials_cost);
+            const stages = stagesBySite.get(p.id) ?? [];
+            const stagesExpanded = expandedStages.has(p.id);
+            const completedStages = stages.filter((s) => s.status === "completed").length;
+            const paidInStages = stages.reduce((s, st) =>
+              st.status === "completed" ? s + Number(st.payment_amount ?? 0) : s, 0);
+
             return (
               <Card key={p.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-5">
+                  {/* Header */}
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="min-w-0">
                       <h3 className="font-display font-semibold text-base truncate">{p.name}</h3>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
+                        {p.client_id && (
+                          <span className="text-xs text-muted-foreground">{clientMap.get(p.client_id)}</span>
+                        )}
                       </div>
                     </div>
                     {isManager && (
                       <div className="flex gap-1 shrink-0">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => { setEditing(p); setDialogOpen(true); }}
-                          title="עריכה"
-                        >
+                        <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setDialogOpen(true); }} title="עריכה">
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {isAdmin && (
@@ -278,13 +325,8 @@ function ProjectsPage() {
                     )}
                   </div>
 
+                  {/* Details */}
                   <div className="space-y-1.5 text-sm text-muted-foreground">
-                    {p.client_id && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-muted-foreground">לקוח:</span>
-                        <span className="font-medium text-foreground">{clientMap.get(p.client_id) ?? "—"}</span>
-                      </div>
-                    )}
                     {p.address && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -302,21 +344,55 @@ function ProjectsPage() {
                     )}
                   </div>
 
+                  {/* Financials */}
                   <div className="mt-4 pt-3 border-t grid grid-cols-3 gap-2 text-sm">
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">הכנסה</p>
-                      <p className="font-semibold">₪{Number(p.contract_price).toLocaleString("he-IL")}</p>
+                      <p className="font-semibold">{fmt(p.contract_price)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">חומרים</p>
-                      <p className="font-semibold">₪{Number(p.materials_cost).toLocaleString("he-IL")}</p>
+                      <p className="font-semibold">{fmt(p.materials_cost)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">רווח גס</p>
-                      <p className={`font-semibold ${profitEstimate >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
-                        ₪{profitEstimate.toLocaleString("he-IL")}
+                      <p className={`font-semibold ${profitEstimate >= 0 ? "text-green-600" : "text-destructive"}`}>
+                        {fmt(profitEstimate)}
                       </p>
                     </div>
+                  </div>
+
+                  {/* Stages section */}
+                  <div className="mt-3 pt-3 border-t">
+                    <button
+                      className="w-full flex items-center justify-between text-sm font-medium hover:text-primary transition-colors"
+                      onClick={() => toggleStages(p.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>שלבים</span>
+                        {stages.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ({completedStages}/{stages.length} הושלמו
+                            {paidInStages > 0 && ` · ${fmt(paidInStages)} שולם`})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isManager && (
+                          <span className="text-xs text-primary">+ הוסף</span>
+                        )}
+                        {stagesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </div>
+                    </button>
+
+                    {stagesExpanded && (
+                      <StagesPanel
+                        siteId={p.id}
+                        stages={stages}
+                        isManager={isManager}
+                        isAdmin={isAdmin}
+                      />
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -327,6 +403,260 @@ function ProjectsPage() {
     </div>
   );
 }
+
+// ── Stages Panel ──────────────────────────────────────────────────────────────
+
+function StagesPanel({
+  siteId, stages, isManager, isAdmin,
+}: { siteId: string; stages: Stage[]; isManager: boolean; isAdmin: boolean }) {
+  const qc = useQueryClient();
+  const [addOpen, setAddOpen] = useState(false);
+  const [editStage, setEditStage] = useState<Stage | null>(null);
+
+  const updateStatusM = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: Stage["status"] }) => {
+      const { error } = await supabase.from("site_stages").update({
+        status,
+        completed_at: status === "completed" ? new Date().toISOString().slice(0, 10) : null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["all-stages"] }),
+    onError: (e: Error) => toast.error("עדכון נכשל", { description: e.message }),
+  });
+
+  const deleteM = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("site_stages").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("שלב נמחק");
+      qc.invalidateQueries({ queryKey: ["all-stages"] });
+    },
+    onError: (e: Error) => toast.error("מחיקה נכשלה", { description: e.message }),
+  });
+
+  return (
+    <div className="mt-3 space-y-2">
+      {stages.length === 0 && (
+        <p className="text-xs text-muted-foreground text-center py-2">
+          אין שלבים — לחץ "הוסף" להגדרת שלבי הפרויקט
+        </p>
+      )}
+      {stages.map((s) => {
+        const StIcon = STAGE_STATUS_LABELS[s.status].icon;
+        return (
+          <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40 group">
+            {isManager ? (
+              <button
+                className={`shrink-0 ${STAGE_STATUS_COLORS[s.status]} hover:opacity-70 transition-opacity`}
+                onClick={() => {
+                  const next: Stage["status"] = s.status === "pending" ? "in_progress"
+                    : s.status === "in_progress" ? "completed" : "pending";
+                  updateStatusM.mutate({ id: s.id, status: next });
+                }}
+                title="לחץ לשינוי סטטוס"
+              >
+                <StIcon className="h-4 w-4" />
+              </button>
+            ) : (
+              <StIcon className={`h-4 w-4 shrink-0 ${STAGE_STATUS_COLORS[s.status]}`} />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-medium ${s.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
+                  {s.name}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] py-0 px-1.5 ${STAGE_STATUS_COLORS[s.status]} border-current/30`}
+                >
+                  {STAGE_STATUS_LABELS[s.status].label}
+                </Badge>
+              </div>
+              {s.payment_amount && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <DollarSign className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">{fmt(s.payment_amount)}</span>
+                  {s.completed_at && (
+                    <span className="text-[10px] text-muted-foreground">· שולם {s.completed_at}</span>
+                  )}
+                </div>
+              )}
+            </div>
+            {isManager && (
+              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6"
+                  onClick={() => setEditStage(s)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                {isAdmin && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-6 w-6">
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent dir="rtl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>למחוק שלב "{s.name}"?</AlertDialogTitle>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>ביטול</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteM.mutate(s.id)}>מחק</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {isManager && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full h-7 text-xs border-dashed"
+          onClick={() => setAddOpen(true)}
+        >
+          <Plus className="h-3 w-3 ml-1" /> הוסף שלב
+        </Button>
+      )}
+
+      <StageDialog
+        open={addOpen || !!editStage}
+        siteId={siteId}
+        editing={editStage}
+        sortOrder={stages.length}
+        onClose={() => { setAddOpen(false); setEditStage(null); }}
+      />
+    </div>
+  );
+}
+
+// ── Stage Dialog ──────────────────────────────────────────────────────────────
+
+function StageDialog({
+  open, siteId, editing, sortOrder, onClose,
+}: {
+  open: boolean;
+  siteId: string;
+  editing: Stage | null;
+  sortOrder: number;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({
+    name: editing?.name ?? "",
+    payment_amount: editing?.payment_amount != null ? editing.payment_amount.toString() : "",
+    status: (editing?.status ?? "pending") as Stage["status"],
+    notes: editing?.notes ?? "",
+  });
+
+  const saveM = useMutation({
+    mutationFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const payload = {
+        name: form.name.trim(),
+        payment_amount: form.payment_amount ? Number(form.payment_amount) : null,
+        status: form.status,
+        notes: form.notes.trim() || null,
+      };
+      if (editing) {
+        const { error } = await supabase.from("site_stages").update(payload).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("site_stages").insert({
+          ...payload, site_id: siteId, sort_order: sortOrder, user_id: u.user!.id,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editing ? "שלב עודכן" : "שלב נוסף");
+      qc.invalidateQueries({ queryKey: ["all-stages"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error("שמירה נכשלה", { description: e.message }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{editing ? "עריכת שלב" : "שלב חדש"}</DialogTitle>
+          <DialogDescription>הגדר שלב בפרויקט ותשלום מקביל</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={(e) => { e.preventDefault(); saveM.mutate(); }} className="space-y-4">
+          <div className="space-y-2">
+            <Label>שם השלב *</Label>
+            <div className="flex gap-2 flex-wrap mb-1">
+              {PRESET_STAGES.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setForm({ ...form, name: p })}
+                  className="text-xs px-2 py-0.5 rounded-full border hover:bg-muted transition-colors"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+            <Input
+              required
+              placeholder="שחור / לבן / גבס..."
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>סכום תשלום (₪)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0"
+                value={form.payment_amount}
+                onChange={(e) => setForm({ ...form, payment_amount: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>סטטוס</Label>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Stage["status"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">ממתין</SelectItem>
+                  <SelectItem value="in_progress">בביצוע</SelectItem>
+                  <SelectItem value="completed">הושלם</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>הערות</Label>
+            <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>ביטול</Button>
+            <Button type="submit" disabled={saveM.isPending || !form.name.trim()}>
+              {saveM.isPending ? "שומר..." : editing ? "עדכן" : "הוסף"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Project Dialog ─────────────────────────────────────────────────────────────
 
 function ProjectDialog({
   editing, clients, onClose,
