@@ -8,6 +8,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { he } from "date-fns/locale";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ function fmt(n: number) {
 }
 
 function Dashboard() {
+  const { isManager } = useAuth();
   const today = format(new Date(), "yyyy-MM-dd");
   const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(new Date()), "yyyy-MM-dd");
@@ -129,7 +131,7 @@ function Dashboard() {
     actions.push({ label: `בדוק ${stats!.lossProjects} אתרים בהפסד`, to: "/profitability", urgency: "high" });
   if ((stats?.openPayments ?? 0) > 2 && (stats?.totalDebt ?? 0) === 0)
     actions.push({ label: `${stats!.openPayments} לקוחות עם יתרת חוב`, to: "/payments", urgency: "medium" });
-  if (actions.length < 3)
+  if (isManager && actions.length < 3)
     actions.push({ label: "בדוק רווחיות אתרים", to: "/profitability", urgency: "low" });
   if (actions.length < 3)
     actions.push({ label: "עדכן שיבוצים לשבוע הבא", to: "/scheduling", urgency: "low" });
@@ -170,7 +172,7 @@ function Dashboard() {
       )}
 
       {/* KPI grid */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="stagger grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Link to="/employees">
           <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
             <CardContent className="p-5">
@@ -205,8 +207,9 @@ function Dashboard() {
           </Card>
         </Link>
 
+        {isManager && (
         <Link to="/clients">
-          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+          <Card className="card-lift hover:shadow-md cursor-pointer">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
@@ -221,9 +224,11 @@ function Dashboard() {
             </CardContent>
           </Card>
         </Link>
+        )}
 
+        {isManager && (
         <Link to="/profitability">
-          <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+          <Card className="card-lift hover:shadow-md cursor-pointer">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
@@ -240,12 +245,14 @@ function Dashboard() {
             </CardContent>
           </Card>
         </Link>
+        )}
       </div>
 
       {/* Financial summary row */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        {isManager && (
         <Link to="/payments">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <Card className="card-lift hover:shadow-md cursor-pointer">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 shrink-0">
                 <Wallet className="h-6 w-6 text-green-600" />
@@ -258,9 +265,11 @@ function Dashboard() {
             </CardContent>
           </Card>
         </Link>
+        )}
 
+        {isManager && (
         <Link to="/payments">
-          <Card className={`hover:shadow-md transition-shadow cursor-pointer ${(stats?.totalDebt ?? 0) > 0 ? "border-destructive/30" : ""}`}>
+          <Card className={`card-lift hover:shadow-md cursor-pointer ${(stats?.totalDebt ?? 0) > 0 ? "border-destructive/30" : ""}`}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 shrink-0">
                 <AlertTriangle className={`h-6 w-6 ${(stats?.totalDebt ?? 0) > 0 ? "text-destructive" : "text-muted-foreground"}`} />
@@ -275,9 +284,10 @@ function Dashboard() {
             </CardContent>
           </Card>
         </Link>
+        )}
 
-        <Link to="/scheduling">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Link to="/scheduling" className={isManager ? "" : "sm:col-span-3"}>
+          <Card className="card-lift hover:shadow-md cursor-pointer">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 shrink-0">
                 <Calendar className="h-6 w-6 text-blue-500" />
@@ -373,12 +383,16 @@ function Dashboard() {
                   return (
                     <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/40">
                       <span className="font-medium text-sm truncate flex-1 me-2">{p.name}</span>
+                      {isManager ? (
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs text-muted-foreground">{fmt(p.contract_price)}</span>
                         <span className={`text-xs font-semibold ${profit >= 0 ? "text-green-600" : "text-destructive"}`}>
                           {fmt(profit)}
                         </span>
                       </div>
+                      ) : (
+                        <Badge variant="outline" className="text-xs shrink-0">פעיל</Badge>
+                      )}
                     </div>
                   );
                 })}

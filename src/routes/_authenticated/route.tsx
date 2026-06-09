@@ -23,13 +23,17 @@ const ROUTE_TITLES: Record<string, string> = {
   "/clients": "לקוחות",
   "/projects": "אתרים",
   "/scheduling": "שיבוץ יומי",
+  "/attendance": "נוכחות",
   "/payments": "תשלומים",
+  "/salaries": "שכר בפועל",
+  "/materials": "חומרים",
   "/profitability": "רווחיות",
   "/pricing-simulator": "סימולטור תמחור",
   "/users": "ניהול משתמשים",
 };
 
 function AuthenticatedLayout() {
+  const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <AuthProvider>
       <SidebarProvider>
@@ -38,7 +42,9 @@ function AuthenticatedLayout() {
           <SidebarInset>
             <Header />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-              <Outlet />
+              <div key={path} className="animate-fade-up">
+                <Outlet />
+              </div>
             </main>
           </SidebarInset>
         </div>
@@ -57,7 +63,7 @@ function Header() {
     roles.includes("employee") ? "עובד" : "";
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/80 backdrop-blur px-4">
+    <header className="glass sticky top-0 z-10 flex h-14 items-center gap-3 border-b px-4">
       <SidebarTrigger />
       <Separator orientation="vertical" className="h-6" />
       <h1 className="font-display text-lg font-semibold">{title}</h1>
