@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, TrendingDown, CheckCircle, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, TrendingDown, CheckCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +50,13 @@ const STATUS_MAP = {
   paid:     { label: "שולם",   variant: "secondary" as const,   icon: CheckCircle },
 };
 
+const STATUS_FILTERS: { value: "all" | Payment["status"]; label: string }[] = [
+  { value: "all",     label: "הכל" },
+  { value: "pending", label: "ממתין" },
+  { value: "partial", label: "חלקי" },
+  { value: "paid",    label: "שולם" },
+];
+
 function fmt(n: number) {
   return `₪${Number(n).toLocaleString("he-IL")}`;
 }
@@ -58,8 +65,12 @@ function PaymentsPage() {
   const qc = useQueryClient();
   const { isManager, isAdmin } = useAuth();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | Payment["status"]>("all");
+  const [clientFilter, setClientFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Payment | null>(null);
+  // GAP-018: track which client rows are expanded in by-client tab
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
 
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ["payments"],
@@ -103,24 +114,69 @@ function PaymentsPage() {
     onError: (e: Error) => toast.error("מחיקה נכשלה", { description: e.message }),
   });
 
-  const filtered = payments.filter((p) =>
-    [p.clients?.name, p.projects?.name, p.notes].some((v) =>
-      v?.toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  // GAP-023: Multi-criteria filter
+  const filtered = payments.filter((p) => {
+    if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    if (clientFilter !== "all" && p.client_id !== clientFilter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return [p.clients?.name, p.projects?.name, p.notes].some((v) =>
+        v?.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
-  // Stats
+  // Stats (always from all payments, not filtered)
   const totalDebt = payments.reduce((s, p) => s + (Number(p.total_amount) - Number(p.paid_amount)), 0);
   const totalCollected = payments.reduce((s, p) => s + Number(p.paid_amount), 0);
   const openCount = payments.filter((p) => p.status !== "paid").length;
 
-  // Group by client
+  // GAP-018: Group by client → by project for the expanded view
   const byClient = clients.map((c) => {
     const clientPayments = payments.filter((p) => p.client_id === c.id);
+    if (clientPayments.length === 0) return null;
+
     const total = clientPayments.reduce((s, p) => s + Number(p.total_amount), 0);
     const paid = clientPayments.reduce((s, p) => s + Number(p.paid_amount), 0);
-    return { ...c, total, paid, balance: total - paid, count: clientPayments.length };
-  }).filter((c) => c.count > 0).sort((a, b) => b.balance - a.balance);
+    const balance = total - paid;
+
+    // Group by project within client
+    const bySite = Object.values(
+      clientPayments.reduce((acc, p) => {
+        const key = p.project_id || "__none__";
+        if (!acc[key]) {
+          acc[key] = {
+            projectId: key,
+            projectName: p.projects?.name ?? "ללא פרויקט",
+            rows: [] as Payment[],
+          };
+        }
+        acc[key].rows.push(p);
+        return acc;
+      }, {} as Record<string, { projectId: string; projectName: string; rows: Payment[] }>)
+    ).map((site) => ({
+      ...site,
+      total: site.rows.reduce((s, p) => s + Number(p.total_amount), 0),
+      paid: site.rows.reduce((s, p) => s + Number(p.paid_amount), 0),
+      balance: site.rows.reduce((s, p) => s + Number(p.total_amount) - Number(p.paid_amount), 0),
+    }));
+
+    return { id: c.id, name: c.name, total, paid, balance, bySite };
+  }).filter(Boolean).sort((a, b) => b!.balance - a!.balance) as {
+    id: string; name: string; total: number; paid: number; balance: number;
+    bySite: { projectId: string; projectName: string; rows: Payment[]; total: number; paid: number; balance: number }[];
+  }[];
+
+  const toggleExpand = (id: string) => {
+    setExpandedClients((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const hasActiveFilters = statusFilter !== "all" || clientFilter !== "all" || search.trim().length > 0;
 
   return (
     <div className="space-y-5">
@@ -128,7 +184,7 @@ function PaymentsPage() {
       <div className="grid grid-cols-3 gap-3">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">סך חובות פתוחים</p>
+            <p className="text-xs text-muted-foreground">חובות פתוחים</p>
             <p className="text-2xl font-bold text-destructive">{fmt(totalDebt)}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{openCount} רשומות פתוחות</p>
           </CardContent>
@@ -148,16 +204,12 @@ function PaymentsPage() {
       </div>
 
       <Tabs defaultValue="all" dir="rtl">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <TabsList>
             <TabsTrigger value="all">כל התשלומים</TabsTrigger>
             <TabsTrigger value="by-client">לפי לקוח</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
-            <div className="relative w-56">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="חיפוש..." value={search} onChange={(e) => setSearch(e.target.value)} className="ps-3 pe-9" />
-            </div>
             {isManager && (
               <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }}>
                 <DialogTrigger asChild>
@@ -174,23 +226,94 @@ function PaymentsPage() {
           </div>
         </div>
 
-        {/* All payments */}
+        {/* GAP-023: Advanced filters row */}
+        <div className="mt-3 flex flex-wrap gap-2 items-center">
+          {/* Text search */}
+          <div className="relative w-56">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="חיפוש לקוח / פרויקט..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="ps-3 pe-9"
+            />
+          </div>
+
+          {/* Status filter chips */}
+          <div className="flex gap-1">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setStatusFilter(f.value)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  statusFilter === f.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border hover:bg-muted"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Client filter */}
+          <Select value={clientFilter} onValueChange={setClientFilter}>
+            <SelectTrigger className="w-40 h-8 text-xs">
+              <SelectValue placeholder="כל הלקוחות" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל הלקוחות</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs text-muted-foreground"
+              onClick={() => { setSearch(""); setStatusFilter("all"); setClientFilter("all"); }}
+            >
+              נקה סינון
+            </Button>
+          )}
+        </div>
+
+        {/* All payments tab */}
         <TabsContent value="all" className="mt-4">
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">טוען...</div>
           ) : filtered.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
-                <p className="text-muted-foreground">לא נמצאו תשלומים</p>
-                {isManager && (
-                  <Button className="mt-4" onClick={() => setDialogOpen(true)}>
-                    <Plus className="h-4 w-4" /> הוסף תשלום ראשון
-                  </Button>
+                {hasActiveFilters ? (
+                  <>
+                    <p className="text-muted-foreground">לא נמצאו תשלומים תואמים</p>
+                    <Button variant="outline" className="mt-3" onClick={() => { setSearch(""); setStatusFilter("all"); setClientFilter("all"); }}>
+                      נקה סינון
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground">לא נמצאו תשלומים</p>
+                    {isManager && (
+                      <Button className="mt-4" onClick={() => setDialogOpen(true)}>
+                        <Plus className="h-4 w-4" /> הוסף תשלום ראשון
+                      </Button>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-2">
+              {hasActiveFilters && (
+                <p className="text-xs text-muted-foreground mb-1">
+                  מציג {filtered.length} מתוך {payments.length} תשלומים
+                </p>
+              )}
               {filtered.map((p) => {
                 const balance = Number(p.total_amount) - Number(p.paid_amount);
                 const pct = p.total_amount > 0 ? Math.round((Number(p.paid_amount) / Number(p.total_amount)) * 100) : 0;
@@ -222,7 +345,6 @@ function PaymentsPage() {
                               </p>
                             </div>
                           </div>
-                          {/* Progress bar */}
                           <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
                             <div
                               className="h-full rounded-full bg-green-500 transition-all"
@@ -264,40 +386,98 @@ function PaymentsPage() {
           )}
         </TabsContent>
 
-        {/* By client */}
+        {/* GAP-018: By client with per-site breakdown */}
         <TabsContent value="by-client" className="mt-4">
           {byClient.length === 0 ? (
             <Card><CardContent className="text-center py-12 text-muted-foreground">אין נתונים</CardContent></Card>
           ) : (
             <div className="space-y-3">
-              {byClient.map((c) => (
-                <Card key={c.id} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">{c.name}</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{c.count} פרויקטים</p>
-                      </div>
-                      <div className="text-left grid grid-cols-3 gap-6 text-sm">
-                        <div className="text-center">
-                          <p className="text-[10px] uppercase text-muted-foreground">סכום כולל</p>
-                          <p className="font-semibold">{fmt(c.total)}</p>
+              {byClient.map((c) => {
+                const isExpanded = expandedClients.has(c.id);
+                return (
+                  <Card key={c.id} className="hover:shadow-sm transition-shadow">
+                    <CardContent className="p-0">
+                      {/* Client header row */}
+                      <button
+                        className="w-full p-4 flex items-center justify-between gap-3 text-right"
+                        onClick={() => toggleExpand(c.id)}
+                        aria-expanded={isExpanded}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div>
+                            {isExpanded
+                              ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                              : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+                          </div>
+                          <div className="text-right">
+                            <h3 className="font-semibold">{c.name}</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">{c.bySite.length} אתרים</p>
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <p className="text-[10px] uppercase text-muted-foreground">שולם</p>
-                          <p className="font-semibold text-green-600">{fmt(c.paid)}</p>
+                        <div className="grid grid-cols-3 gap-4 text-sm shrink-0">
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase text-muted-foreground">סכום כולל</p>
+                            <p className="font-semibold">{fmt(c.total)}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase text-muted-foreground">שולם</p>
+                            <p className="font-semibold text-green-600">{fmt(c.paid)}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] uppercase text-muted-foreground">יתרה</p>
+                            <p className={`font-semibold text-lg ${c.balance > 0 ? "text-destructive" : "text-green-600"}`}>
+                              {fmt(c.balance)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <p className="text-[10px] uppercase text-muted-foreground">יתרה</p>
-                          <p className={`font-semibold text-lg ${c.balance > 0 ? "text-destructive" : "text-green-600"}`}>
-                            {fmt(c.balance)}
-                          </p>
+                      </button>
+
+                      {/* GAP-018: Per-site breakdown (expanded) */}
+                      {isExpanded && (
+                        <div className="border-t bg-muted/20">
+                          {c.bySite.map((site) => {
+                            const sitePct = site.total > 0
+                              ? Math.round((site.paid / site.total) * 100)
+                              : 0;
+                            return (
+                              <div key={site.projectId} className="px-4 py-3 border-b last:border-b-0">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium truncate">{site.projectName}</p>
+                                    <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden w-32">
+                                      <div
+                                        className="h-full rounded-full bg-green-500"
+                                        style={{ width: `${sitePct}%` }}
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">{sitePct}% שולם</p>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-3 text-sm shrink-0">
+                                    <div className="text-center">
+                                      <p className="text-[10px] text-muted-foreground">כולל</p>
+                                      <p className="font-medium text-xs">{fmt(site.total)}</p>
+                                    </div>
+                                    <div className="text-center">
+                                      <p className="text-[10px] text-muted-foreground">שולם</p>
+                                      <p className="font-medium text-xs text-green-600">{fmt(site.paid)}</p>
+                                    </div>
+                                    <div className="text-center">
+                                      <p className="text-[10px] text-muted-foreground">יתרה</p>
+                                      <p className={`font-medium text-xs ${site.balance > 0 ? "text-destructive" : "text-green-600"}`}>
+                                        {fmt(site.balance)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
