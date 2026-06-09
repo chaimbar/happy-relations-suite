@@ -21,3 +21,5 @@
 2026-06-09 — סשן 2: מודול פיננסי (GAP-005/008/010/019/024) — בניה מחדש של project_profitability view לטרגט sites, הוספת salary_site_allocation view, תיקון index.tsx (projects→sites), הרחבת ProfRow עם actual_labor_cost/actual_profit/labor_variance, כתיבה מחדש של types.ts עם כל הטבלאות הנכונות.
 2026-06-09 — feat: Materials Management UI — /materials route עם CRUD מלא, סינון לפי אתר, סיכום תקציב vs בפועל, auto-sync sites.materials_cost — GAP-004/GAP-022
 2026-06-09 — GAP-007/018/023: הוספת Client Analytics (סיכום פיננסי בכרטיס לקוח: אתרים/שולם/יתרה), Payments By Site (breakdown per project expandable), Advanced Search (status chips + client filter). clients.tsx + payments.tsx.
+
+2026-06-09 — GAP-014/003/002: הוחלה מיגרציית אבטחה — RLS isolation למנהלי צוות, triggers ל-audit_logs על 7 טבלאות, notification_queue + Edge Function לשליחת מייל/ווטסאפ
