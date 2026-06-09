@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Building2, UserCog, TrendingUp, Wallet, AlertTriangle, Calendar } from "lucide-react";
-import { format } from "date-fns";
+import {
+  Users, Building2, UserCog, TrendingUp, Wallet, AlertTriangle, Calendar,
+  ChevronLeft, Zap,
+} from "lucide-react";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { he } from "date-fns/locale";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
@@ -18,16 +22,23 @@ function fmt(n: number) {
 
 function Dashboard() {
   const today = format(new Date(), "yyyy-MM-dd");
+  const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
+  const monthEnd = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const [emp, cli, proj, todayAssign, payments] = await Promise.all([
+      const [emp, cli, proj, todayAssign, payments, profitability, monthlyPay] = await Promise.all([
         supabase.from("employees").select("id, status"),
         supabase.from("clients").select("id", { count: "exact", head: true }),
         supabase.from("sites").select("id, status, total_price"),
         supabase.from("assignments").select("id, employee_id").eq("date", today),
         supabase.from("payments").select("total_amount, paid_amount, status"),
+        supabase.from("project_profitability").select("actual_profit, estimated_profit, total_price, balance_due, status"),
+        supabase.from("payments")
+          .select("paid_amount")
+          .gte("payment_date", monthStart)
+          .lte("payment_date", monthEnd),
       ]);
 
       const activeEmployees = emp.data?.filter((e) => e.status === "active") ?? [];
@@ -39,7 +50,20 @@ function Dashboard() {
         (s, p) => s + (Number(p.total_amount) - Number(p.paid_amount)), 0
       );
       const openPayments = (payments.data ?? []).filter((p) => p.status !== "paid").length;
-      const revenue = (proj.data ?? []).reduce((s, p) => s + Number(p.total_price || 0), 0);
+
+      const profRows = profitability.data ?? [];
+      const totalRevenue = profRows.reduce((s, r) => s + Number(r.total_price ?? 0), 0);
+      const totalProfit = profRows.reduce(
+        (s, r) => s + Number(r.actual_profit ?? r.estimated_profit ?? 0), 0
+      );
+      const lossProjects = profRows.filter(
+        (r) => Number(r.actual_profit ?? r.estimated_profit ?? 0) < 0
+      ).length;
+      const profitMargin = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 100) : 0;
+
+      const monthlyCollected = (monthlyPay.data ?? []).reduce(
+        (s, p) => s + Number(p.paid_amount), 0
+      );
 
       return {
         employees: emp.data?.length ?? 0,
@@ -47,7 +71,11 @@ function Dashboard() {
         clients: cli.count ?? 0,
         projects: proj.data?.length ?? 0,
         activeProjects: activeProjects.length,
-        revenue,
+        totalRevenue,
+        totalProfit,
+        profitMargin,
+        lossProjects,
+        monthlyCollected,
         todayAssignments: todayAssign.data?.length ?? 0,
         unassignedCount: unassignedToday.length,
         totalDebt,
@@ -82,14 +110,64 @@ function Dashboard() {
     },
   });
 
+  // Smart alerts — only shown when actionable
+  const alerts: { text: string; to: string; color: "red" | "orange" }[] = [];
+  if ((stats?.unassignedCount ?? 0) > 0)
+    alerts.push({ text: `${stats!.unassignedCount} עובדים ללא שיבוץ היום`, to: "/scheduling", color: "orange" });
+  if ((stats?.totalDebt ?? 0) > 0)
+    alerts.push({ text: `${fmt(stats!.totalDebt)} חוב פתוח`, to: "/payments", color: "red" });
+  if ((stats?.lossProjects ?? 0) > 0)
+    alerts.push({ text: `${stats!.lossProjects} פרויקטים בהפסד`, to: "/profitability", color: "red" });
+
+  // Recommended actions — dynamic, priority-ordered
+  const actions: { label: string; to: string; urgency: "high" | "medium" | "low" }[] = [];
+  if ((stats?.unassignedCount ?? 0) > 0)
+    actions.push({ label: `שבץ ${stats!.unassignedCount} עובדים להיום`, to: "/scheduling", urgency: "high" });
+  if ((stats?.totalDebt ?? 0) > 0)
+    actions.push({ label: `גבה ${fmt(stats!.totalDebt)} מלקוחות`, to: "/payments", urgency: stats!.totalDebt > 5000 ? "high" : "medium" });
+  if ((stats?.lossProjects ?? 0) > 0)
+    actions.push({ label: `בדוק ${stats!.lossProjects} פרויקטים בהפסד`, to: "/profitability", urgency: "high" });
+  if ((stats?.openPayments ?? 0) > 2 && (stats?.totalDebt ?? 0) === 0)
+    actions.push({ label: `${stats!.openPayments} תשלומים פתוחים לטיפול`, to: "/payments", urgency: "medium" });
+  if (actions.length < 3)
+    actions.push({ label: "בדוק רווחיות פרויקטים", to: "/profitability", urgency: "low" });
+  if (actions.length < 3)
+    actions.push({ label: "עדכן שיבוצים לשבוע הבא", to: "/scheduling", urgency: "low" });
+
+  const urgencyStyle = {
+    high: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
+    medium: "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100",
+    low: "bg-muted/50 border-border text-foreground hover:bg-muted",
+  };
+
+  const alertStyle = {
+    red: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
+    orange: "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100",
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h2 className="font-display text-2xl font-bold">דשבורד</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {format(new Date(), "EEEE, d MMMM yyyy", { locale: he })}
         </p>
       </div>
+
+      {/* Smart Alerts strip */}
+      {alerts.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {alerts.map((a, i) => (
+            <Link key={i} to={a.to}>
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${alertStyle[a.color]}`}>
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>{a.text}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* KPI grid */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
@@ -149,13 +227,13 @@ function Dashboard() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">הכנסה כוללת</p>
-                  <p className="font-display text-2xl font-bold mt-2">
-                    {stats ? fmt(stats.revenue) : "—"}
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">רווח נקי</p>
+                  <p className={`font-display text-2xl font-bold mt-2 ${(stats?.totalProfit ?? 0) >= 0 ? "text-green-600" : "text-destructive"}`}>
+                    {stats ? fmt(stats.totalProfit) : "—"}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">כל הפרויקטים</p>
+                  <p className="text-xs text-muted-foreground mt-1">מרווח {stats?.profitMargin ?? 0}%</p>
                 </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-400 text-white shrink-0">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br shrink-0 text-white ${(stats?.totalProfit ?? 0) >= 0 ? "from-green-500 to-green-400" : "from-red-500 to-red-400"}`}>
                   <TrendingUp className="h-5 w-5" />
                 </div>
               </div>
@@ -164,8 +242,23 @@ function Dashboard() {
         </Link>
       </div>
 
-      {/* Second row: alerts */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+      {/* Financial summary row */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        <Link to="/payments">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 shrink-0">
+                <Wallet className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">גבייה החודש</p>
+                <p className="text-2xl font-bold text-green-600">{stats ? fmt(stats.monthlyCollected) : "—"}</p>
+                <p className="text-xs text-muted-foreground">תשלומים שנכנסו</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
         <Link to="/payments">
           <Card className={`hover:shadow-md transition-shadow cursor-pointer ${(stats?.totalDebt ?? 0) > 0 ? "border-destructive/30" : ""}`}>
             <CardContent className="p-5 flex items-center gap-4">
@@ -192,8 +285,10 @@ function Dashboard() {
               <div>
                 <p className="text-xs text-muted-foreground">שיבוצים היום</p>
                 <p className="text-2xl font-bold">{stats?.todayAssignments ?? "—"}</p>
-                {(stats?.unassignedCount ?? 0) > 0 && (
-                  <p className="text-xs text-orange-500">{stats?.unassignedCount} עובדים ללא שיבוץ</p>
+                {(stats?.unassignedCount ?? 0) > 0 ? (
+                  <p className="text-xs text-orange-500">{stats!.unassignedCount} עובדים ללא שיבוץ</p>
+                ) : (
+                  <p className="text-xs text-green-600">כולם משובצים</p>
                 )}
               </div>
             </CardContent>
@@ -201,8 +296,31 @@ function Dashboard() {
         </Link>
       </div>
 
+      {/* Recommended Actions */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Zap className="h-4 w-4 text-amber-500" />
+            פעולות מומלצות להיום
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {actions.slice(0, 5).map((a, i) => (
+            <Link key={i} to={a.to}>
+              <div className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${urgencyStyle[a.urgency]}`}>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold opacity-60">{i + 1}.</span>
+                  <span className="text-sm font-medium">{a.label}</span>
+                </div>
+                <ChevronLeft className="h-4 w-4 shrink-0 opacity-50" />
+              </div>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Today's assignments + Active projects */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        {/* Today's assignments */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -212,10 +330,11 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             {todayList.length === 0 ? (
-              <div className="text-center py-6">
+              <div className="text-center py-8">
+                <Calendar className="h-8 w-8 text-muted-foreground/25 mx-auto mb-2" />
                 <p className="text-muted-foreground text-sm">אין שיבוצים להיום</p>
-                <Link to="/scheduling" className="text-xs text-blue-500 hover:underline mt-1 block">
-                  לוח שיבוץ ←
+                <Link to="/scheduling">
+                  <Button variant="outline" size="sm" className="mt-3">צור שיבוץ ראשון</Button>
                 </Link>
               </div>
             ) : (
@@ -231,7 +350,6 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Active projects */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -241,16 +359,17 @@ function Dashboard() {
           </CardHeader>
           <CardContent>
             {recentProjects.length === 0 ? (
-              <div className="text-center py-6">
+              <div className="text-center py-8">
+                <Building2 className="h-8 w-8 text-muted-foreground/25 mx-auto mb-2" />
                 <p className="text-muted-foreground text-sm">אין אתרים פעילים</p>
-                <Link to="/projects" className="text-xs text-blue-500 hover:underline mt-1 block">
-                  ניהול אתרים ←
+                <Link to="/projects">
+                  <Button variant="outline" size="sm" className="mt-3">הוסף אתר ראשון</Button>
                 </Link>
               </div>
             ) : (
               <div className="space-y-2">
                 {recentProjects.map((p) => {
-                  const profit = Number(p.total_price) - Number(p.materials_cost); // רווח גס — ללא עלות עובדים (לפרטים ← רווחיות)
+                  const profit = Number(p.total_price) - Number(p.materials_cost);
                   return (
                     <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/40 border border-border/40">
                       <span className="font-medium text-sm truncate flex-1 me-2">{p.name}</span>
