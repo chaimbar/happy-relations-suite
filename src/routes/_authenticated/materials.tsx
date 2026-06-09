@@ -410,7 +410,7 @@ function MaterialDialog({
           <Label>שם חומר *</Label>
           <Input
             required
-            placeholder="לדוגמה: בלוקים 20 ס"מ"
+            placeholder='לדוגמה: בלוקים 20 ס"מ'
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
