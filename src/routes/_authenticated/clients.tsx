@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search, Users } from "lucide-react";
+import { useState } from "react";
+import { Plus, Pencil, Trash2, Phone, Mail, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -35,11 +35,13 @@ type Client = {
   notes: string | null;
 };
 
-type ClientFinancials = {
-  siteCount: number;
-  totalPaid: number;
-  totalDebt: number;
-  totalContract: number;
+// GAP-007: from client_balance view
+type ClientBalance = {
+  id: string;
+  total_invoiced: number;
+  total_paid: number;
+  balance_due: number;
+  total_sites: number;
 };
 
 const AVATAR_COLORS = [
@@ -86,53 +88,19 @@ function ClientsPage() {
     },
   });
 
-  // GAP-007: Fetch payment totals per client
-  const { data: paymentRows = [] } = useQuery({
-    queryKey: ["client-payment-summary"],
+  // GAP-007: Financial summary from client_balance view
+  const { data: balanceRows = [] } = useQuery({
+    queryKey: ["client-balance-summary"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("payments")
-        .select("client_id, total_amount, paid_amount");
+        .from("client_balance")
+        .select("id, total_invoiced, total_paid, balance_due, total_sites");
       if (error) throw error;
-      return data as { client_id: string; total_amount: number; paid_amount: number }[];
+      return data as ClientBalance[];
     },
   });
 
-  // GAP-007: Fetch site count per client
-  const { data: siteRows = [] } = useQuery({
-    queryKey: ["client-sites-summary"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sites")
-        .select("id, client_id");
-      if (error) throw error;
-      return data as { id: string; client_id: string | null }[];
-    },
-  });
-
-  // GAP-007: Build per-client financial map
-  const clientFinancials = useMemo(() => {
-    const map = new Map<string, ClientFinancials>();
-
-    for (const p of paymentRows) {
-      if (!p.client_id) continue;
-      const cur = map.get(p.client_id) ?? { siteCount: 0, totalPaid: 0, totalDebt: 0, totalContract: 0 };
-      map.set(p.client_id, {
-        ...cur,
-        totalPaid: cur.totalPaid + Number(p.paid_amount),
-        totalDebt: cur.totalDebt + (Number(p.total_amount) - Number(p.paid_amount)),
-        totalContract: cur.totalContract + Number(p.total_amount),
-      });
-    }
-
-    for (const s of siteRows) {
-      if (!s.client_id) continue;
-      const cur = map.get(s.client_id) ?? { siteCount: 0, totalPaid: 0, totalDebt: 0, totalContract: 0 };
-      map.set(s.client_id, { ...cur, siteCount: cur.siteCount + 1 });
-    }
-
-    return map;
-  }, [paymentRows, siteRows]);
+  const balanceMap = new Map(balanceRows.map((b) => [b.id, b]));
 
   const deleteM = useMutation({
     mutationFn: async (id: string) => {
@@ -245,7 +213,7 @@ function ClientsPage() {
               <ClientCard
                 key={c.id}
                 client={c}
-                financials={clientFinancials.get(c.id)}
+                balance={balanceMap.get(c.id)}
                 isManager={isManager}
                 isAdmin={isAdmin}
                 onEdit={() => { setEditing(c); setDialogOpen(true); }}
@@ -262,7 +230,7 @@ function ClientsPage() {
 
 function ClientCard({
   client: c,
-  financials: fin,
+  balance: bal,
   isManager,
   isAdmin,
   onEdit,
@@ -270,16 +238,16 @@ function ClientCard({
   isDeleting,
 }: {
   client: Client;
-  financials: ClientFinancials | undefined;
+  balance: ClientBalance | undefined;
   isManager: boolean;
   isAdmin: boolean;
   onEdit: () => void;
   onDelete: () => void;
   isDeleting: boolean;
 }) {
-  const hasContact = c.phone || c.email || c.address;
+  const hasContact = c.phone || c.email;
   const avatarColor = getAvatarColor(c.full_name);
-  const hasFinancials = fin && (fin.totalContract > 0 || fin.siteCount > 0);
+  const hasFinancials = bal && (Number(bal.total_invoiced) > 0 || Number(bal.total_sites) > 0);
 
   return (
     <Card className="hover:shadow-md transition-shadow group">
@@ -333,7 +301,7 @@ function ClientCard({
                   </Tooltip>
                   <AlertDialogContent dir="rtl">
                     <AlertDialogHeader>
-                      <AlertDialogTitle>למחוק את {c.name}?</AlertDialogTitle>
+                      <AlertDialogTitle>למחוק את {c.full_name}?</AlertDialogTitle>
                       <AlertDialogDescription>פעולה זו אינה ניתנת לביטול.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -375,12 +343,6 @@ function ClientCard({
                 <span className="truncate">{c.email}</span>
               </a>
             )}
-            {c.address && (
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{c.address}</span>
-              </div>
-            )}
           </div>
         ) : (
           <p className="text-xs text-muted-foreground italic">ללא פרטי קשר</p>
@@ -391,21 +353,21 @@ function ClientCard({
           <p className="mt-3 text-xs text-muted-foreground line-clamp-2 border-t pt-2">{c.notes}</p>
         )}
 
-        {/* GAP-007: Financial Summary */}
+        {/* GAP-007: Financial Summary from client_balance view */}
         {hasFinancials && (
           <div className="mt-3 pt-2 border-t grid grid-cols-3 gap-1 text-center">
             <div>
               <p className="text-[10px] text-muted-foreground">אתרים</p>
-              <p className="text-sm font-semibold">{fin.siteCount}</p>
+              <p className="text-sm font-semibold">{bal.total_sites}</p>
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">שולם</p>
-              <p className="text-sm font-semibold text-green-600">{fmt(fin.totalPaid)}</p>
+              <p className="text-sm font-semibold text-green-600">{fmt(Number(bal.total_paid))}</p>
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">יתרה</p>
-              <p className={`text-sm font-semibold ${fin.totalDebt > 0 ? "text-destructive" : "text-green-600"}`}>
-                {fmt(fin.totalDebt)}
+              <p className={`text-sm font-semibold ${Number(bal.balance_due) > 0 ? "text-destructive" : "text-green-600"}`}>
+                {fmt(Number(bal.balance_due))}
               </p>
             </div>
           </div>
@@ -418,17 +380,16 @@ function ClientCard({
 function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: () => void }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
-    name: editing?.name ?? "",
+    full_name: editing?.full_name ?? "",
     phone: editing?.phone ?? "",
     email: editing?.email ?? "",
-    address: editing?.address ?? "",
     notes: editing?.notes ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
     const next: Record<string, string> = {};
-    if (!form.name.trim()) next.name = "שם הוא שדה חובה";
+    if (!form.full_name.trim()) next.full_name = "שם הוא שדה חובה";
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
       next.email = "כתובת אימייל לא תקינה";
     setErrors(next);
@@ -438,10 +399,9 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
   const saveM = useMutation({
     mutationFn: async () => {
       const payload = {
-        name: form.name.trim(),
+        full_name: form.full_name.trim(),
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
-        address: form.address.trim() || null,
         notes: form.notes.trim() || null,
       };
       if (editing) {
@@ -449,13 +409,14 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
         if (error) throw error;
       } else {
         const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("clients").insert({ ...payload, created_by: u.user?.id });
+        const { error } = await supabase.from("clients").insert({ ...payload, user_id: u.user!.id });
         if (error) throw error;
       }
     },
     onSuccess: () => {
       toast.success(editing ? "לקוח עודכן" : "לקוח נוסף");
       qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["client-balance-summary"] });
       onClose();
     },
     onError: (e: Error) => toast.error("שמירה נכשלה", { description: e.message }),
@@ -479,12 +440,12 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
           </Label>
           <Input
             id="client-name"
-            value={form.name}
-            onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? "name-error" : undefined}
+            value={form.full_name}
+            onChange={(e) => { setForm({ ...form, full_name: e.target.value }); setErrors({ ...errors, full_name: "" }); }}
+            aria-invalid={!!errors.full_name}
+            aria-describedby={errors.full_name ? "name-error" : undefined}
           />
-          {errors.name && <p id="name-error" className="text-xs text-destructive">{errors.name}</p>}
+          {errors.full_name && <p id="name-error" className="text-xs text-destructive">{errors.full_name}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -513,15 +474,6 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
             />
             {errors.email && <p id="email-error" className="text-xs text-destructive col-span-2">{errors.email}</p>}
           </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="client-address">כתובת</Label>
-          <Input
-            id="client-address"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-          />
         </div>
 
         <div className="space-y-1.5">
