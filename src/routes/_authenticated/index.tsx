@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { he } from "date-fns/locale";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -95,6 +96,24 @@ function Dashboard() {
         .eq("date", today);
       if (error) throw error;
       return data as { id: string; employees: { full_name: string }; sites: { name: string } }[];
+    },
+  });
+
+  const { data: chartSites = [] } = useQuery({
+    queryKey: ["chart-sites"],
+    enabled: isManager,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sites")
+        .select("name, contract_price, materials_cost, status")
+        .eq("status", "active")
+        .order("contract_price", { ascending: false })
+        .limit(7);
+      if (error) throw error;
+      return (data ?? []).map((s) => ({
+        name: s.name.length > 14 ? s.name.slice(0, 13) + "…" : s.name,
+        profit: Number(s.contract_price ?? 0) - Number(s.materials_cost ?? 0),
+      }));
     },
   });
 
@@ -328,6 +347,48 @@ function Dashboard() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Profitability chart (managers only) */}
+      {isManager && chartSites.length > 0 && (
+        <Card className="card-lift">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+              רווחיות אתרים פעילים
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 w-full" dir="ltr">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartSites} margin={{ top: 8, right: 8, left: 0, bottom: 24 }}>
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                    height={50}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    width={52}
+                    tickFormatter={(v) => `₪${Math.round(Number(v) / 1000)}k`}
+                  />
+                  <Tooltip
+                    formatter={(v: number) => [fmt(Number(v)), "רווח"]}
+                    cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                  />
+                  <Bar dataKey="profit" radius={[6, 6, 0, 0]}>
+                    {chartSites.map((s, i) => (
+                      <Cell key={i} fill={s.profit >= 0 ? "var(--chart-3)" : "var(--destructive)"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Today's assignments + Active projects */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
