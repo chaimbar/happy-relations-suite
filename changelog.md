@@ -38,3 +38,4 @@
 - 2026-06-09 — הופעלה מערכת ההתראות (פריסת send-notification + חיווט מ-payments) + דף צ׳ק-אין ציבורי /checkin/:empId (submit_checkin) + סגירת חור RLS ציבורי ב-check_ins.
 
 - 2026-06-09 — נוסף מסך "נוכחות" לתפריט (/attendance): טבלת צ׳ק-אין עם עובד/אתר/שעה/מיקום GPS + KPIs.
+- 2026-06-09: שדרוג עיצוב פרימיום (scrollbar/glass/אנימציות/card-lift) + שיעור דשבורד וsidebar לפי תפקיד (עובד=מוגבל) + מצב לילה (toggle). ממתין ל-Publish ב-Lovable + QA דפדפן.
