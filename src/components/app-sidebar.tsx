@@ -15,6 +15,7 @@ import {
   DollarSign,
   KeyRound,
   Calculator,
+  MapPin,
 } from "lucide-react";
 
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
@@ -43,6 +44,7 @@ const mainItems = [
 
 const futureItems = [
   { title: "שיבוץ יומי", url: "/scheduling" as const, icon: Calendar },
+  { title: "נוכחות", url: "/attendance" as const, icon: MapPin },
   { title: "תשלומים", url: "/payments" as const, icon: Wallet },
   { title: "שכר בפועל", url: "/salaries" as const, icon: DollarSign },
   { title: "חומרים", url: "/materials" as const, icon: Package },
