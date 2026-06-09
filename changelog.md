@@ -17,3 +17,4 @@
 - employees.tsx: תוקנו 6 שגיאות query/mutation (user_id, salary_records, shift_type, cost_estimated, sites)
 - Migration file הוחלף ב-no-op documentation
 
+2026-06-09 — P0 fix: scheduling.tsx — החלפת כל הפניות השגויות (projects/project_id/cost_snapshot/created_by/daily_cost_estimate) לסכמה הנכונה של DB החי (sites/site_id/cost_estimated/user_id/daily_cost_estimated). הדף שבור-runtime תוקן לחלוטין.
