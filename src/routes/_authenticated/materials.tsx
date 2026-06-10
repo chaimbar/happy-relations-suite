@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Package, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Search, Download } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCsv } from "@/lib/export-csv";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,6 +120,20 @@ function MaterialsPage() {
   const filteredTotal = filtered.reduce((s, m) => s + Number(m.total_price), 0);
   const isLoading = sitesLoading || matsLoading;
 
+  const handleExport = () =>
+    exportToCsv(
+      `חומרים-${format(new Date(), "yyyy-MM-dd")}.csv`,
+      ["אתר", "שם חומר", "כמות", "מחיר יחידה", "סה\"כ", "הערות"],
+      filtered.map((m) => [
+        siteMap.get(m.site_id)?.name ?? "",
+        m.name,
+        m.quantity,
+        m.unit_price,
+        m.total_price,
+        m.notes,
+      ]),
+    );
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -154,6 +170,9 @@ function MaterialsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
+            <Download className="h-4 w-4 ml-1" /> ייצוא Excel
+          </Button>
           {isManager && (
             <Button
               onClick={() => { setEditing(null); setDialogOpen(true); }}

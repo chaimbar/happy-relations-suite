@@ -4,12 +4,14 @@ import { useState, useMemo, useCallback, useEffect, memo } from "react";
 import {
   Plus, Pencil, Trash2, Phone, IdCard, Search,
   Users, UserCheck, TrendingUp, CalendarDays,
-  FileSpreadsheet, Briefcase, Banknote,
+  Download, Briefcase, Banknote,
   User, LayoutGrid, List, ArrowUpDown, CheckCircle2,
   Circle, Building2, QrCode,
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { exportToCsv } from "@/lib/export-csv";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -162,32 +164,27 @@ function sortEmployees(list: Employee[], sort: SortType): Employee[] {
   });
 }
 
-/** CSV export with updated column names */
+/** Excel export via shared CSV util (UTF-8 BOM, Excel-Hebrew compatible) */
 function exportCSV(employees: Employee[]) {
-  const header = [
-    "שם מלא", "תפקיד", "סוג העסקה", "טלפון", "ת\"ז",
-    "סטטוס", "עלות יומית", "עלות חודשית", "תאריך התחלה", "הערות",
-  ];
-  const rows = employees.map((e) => [
-    e.full_name,
-    e.job_title          ?? "",
-    e.employment_type    ?? "",
-    e.phone              ?? "",
-    e.id_number          ?? "",
-    e.status === "active" ? "פעיל" : "לא פעיל",
-    e.daily_cost_estimated,
-    e.monthly_cost_actual ?? "",
-    e.start_date          ?? "",
-    e.notes               ?? "",
-  ]);
-  const csv  = [header, ...rows].map((r) => r.join(",")).join("\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement("a"), {
-    href: url, download: "עובדים.csv",
-  });
-  a.click();
-  URL.revokeObjectURL(url);
+  exportToCsv(
+    `עובדים-${format(new Date(), "yyyy-MM-dd")}.csv`,
+    [
+      "שם מלא", "טלפון", "ת\"ז", "תפקיד", "סוג העסקה",
+      "תאריך התחלה", "סטטוס", "עלות יומית משוערת", "עלות חודשית בפועל", "הערות",
+    ],
+    employees.map((e) => [
+      e.full_name,
+      e.phone,
+      e.id_number,
+      e.job_title,
+      e.employment_type,
+      e.start_date,
+      e.status === "active" ? "פעיל" : "לא פעיל",
+      e.daily_cost_estimated,
+      e.monthly_cost_actual,
+      e.notes,
+    ]),
+  );
 }
 
 /* ─────────────────────────────────────────
@@ -393,13 +390,15 @@ function EmployeesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm hover:bg-muted transition-colors"
-            title="ייצוא לקובץ CSV"
+            disabled={filtered.length === 0}
+            title="ייצוא לקובץ Excel"
           >
-            <FileSpreadsheet className="h-4 w-4" /> ייצוא CSV
-          </button>
+            <Download className="h-4 w-4 ml-1" /> ייצוא Excel
+          </Button>
           {isManager && (
             <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) closeDialog(); else setDialogOpen(true); }}>
               <DialogTrigger asChild>

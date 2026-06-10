@@ -2,12 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import {
-  Plus, Pencil, Trash2, Search, CheckCircle2, Circle, DollarSign, TrendingDown, Users,
+  Plus, Pencil, Trash2, Search, CheckCircle2, Circle, DollarSign, TrendingDown, Users, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, subMonths } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCsv } from "@/lib/export-csv";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,6 +154,20 @@ function SalariesPage() {
     format(startOfMonth(subMonths(new Date(), i)), "yyyy-MM")
   );
 
+  const handleExport = () =>
+    exportToCsv(
+      `שכר-${format(new Date(), "yyyy-MM-dd")}.csv`,
+      ["עובד", "חודש", "סכום בפועל", "שולם", "אתר", "הערות"],
+      filtered.map((r) => [
+        empMap.get(r.employee_id) ?? "",
+        r.month,
+        r.amount_actual,
+        r.is_paid ? "כן" : "לא",
+        r.site_id ? siteMap.get(r.site_id) ?? "" : "",
+        r.notes,
+      ]),
+    );
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -166,11 +181,16 @@ function SalariesPage() {
             <p className="text-xs text-muted-foreground">רישום משכורות אמיתיות לעובדים</p>
           </div>
         </div>
-        {isManager && (
-          <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4" /> הוסף רשומת שכר
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
+            <Download className="h-4 w-4 ml-1" /> ייצוא Excel
           </Button>
-        )}
+          {isManager && (
+            <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4" /> הוסף רשומת שכר
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* KPIs */}

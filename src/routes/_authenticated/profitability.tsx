@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, DollarSign, Building2, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Building2, AlertTriangle, Download } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
 } from "recharts";
+import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCsv } from "@/lib/export-csv";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -72,6 +75,26 @@ function ProfitabilityPage() {
   const totalDebt = clientBalance.reduce((s, c) => s + Math.max(0, Number(c.balance_due)), 0);
 
   const profitMargin = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 100) : 0;
+
+  const handleExport = () =>
+    exportToCsv(
+      `רווחיות-${format(new Date(), "yyyy-MM-dd")}.csv`,
+      [
+        "אתר", "לקוח", "מחיר חוזה", "עלות חומרים", "עלות עבודה משוערת",
+        "עלות עבודה בפועל", "רווח משוער", "רווח בפועל", "סטיית עלות",
+      ],
+      rows.map((r) => [
+        r.name,
+        clientMap.get(r.client_id) ?? "",
+        r.contract_price,
+        r.materials_cost,
+        r.labor_cost_estimated,
+        r.labor_cost_actual,
+        r.profit_estimated,
+        r.profit_actual,
+        r.cost_variance,
+      ]),
+    );
 
   const chartData = rows.slice(0, 8).map((r) => ({
     name: r.name.length > 12 ? r.name.slice(0, 12) + "…" : r.name,
@@ -170,8 +193,11 @@ function ProfitabilityPage() {
 
       {/* Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">פירוט לפי אתר</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={rows.length === 0}>
+            <Download className="h-4 w-4 ml-1" /> ייצוא Excel
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           {rows.length === 0 ? (

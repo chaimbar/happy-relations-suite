@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Phone, Mail, Search, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Phone, Mail, Search, Users, Download } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCsv } from "@/lib/export-csv";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,6 +122,25 @@ function ClientsPage() {
 
   const isFiltering = search.trim().length > 0;
 
+  const handleExport = () =>
+    exportToCsv(
+      `לקוחות-${format(new Date(), "yyyy-MM-dd")}.csv`,
+      ["שם", "טלפון", "אימייל", "סך חויב", "סך שולם", "יתרה", "מס' אתרים", "הערות"],
+      filtered.map((c) => {
+        const b = balanceMap.get(c.id);
+        return [
+          c.full_name,
+          c.phone,
+          c.email,
+          b ? Number(b.total_invoiced) : 0,
+          b ? Number(b.total_paid) : 0,
+          b ? Number(b.balance_due) : 0,
+          b ? Number(b.total_sites) : 0,
+          c.notes,
+        ];
+      }),
+    );
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
@@ -146,6 +167,15 @@ function ClientsPage() {
                 aria-label="חיפוש לקוחות"
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 self-center"
+              onClick={handleExport}
+              disabled={filtered.length === 0}
+            >
+              <Download className="h-4 w-4 ml-1" /> ייצוא Excel
+            </Button>
             {isManager && (
               <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }}>
                 <DialogTrigger asChild>

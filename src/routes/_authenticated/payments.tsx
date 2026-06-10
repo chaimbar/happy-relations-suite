@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import {
   Plus, Pencil, Trash2, Search, ChevronDown, ChevronUp,
-  DollarSign, TrendingUp, AlertTriangle,
+  DollarSign, TrendingUp, AlertTriangle, Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCsv } from "@/lib/export-csv";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -236,6 +238,21 @@ function PaymentsPage() {
     setDateFrom(""); setDateTo("");
   };
 
+  const handleExport = () =>
+    exportToCsv(
+      `תשלומים-${format(new Date(), "yyyy-MM-dd")}.csv`,
+      ["לקוח", "אתר", "סכום", "תאריך", "אמצעי תשלום", "אסמכתא", "הערות"],
+      filtered.map((p) => [
+        p.clients?.full_name ?? "",
+        p.sites?.name ?? "",
+        p.amount,
+        p.payment_date,
+        p.payment_method ? METHOD_LABELS[p.payment_method] : "",
+        p.reference,
+        p.notes,
+      ]),
+    );
+
   return (
     <div className="space-y-5">
       {/* ── Stats ── */}
@@ -276,19 +293,24 @@ function PaymentsPage() {
             <TabsTrigger value="all">כל התשלומים</TabsTrigger>
             <TabsTrigger value="by-client">לפי לקוח</TabsTrigger>
           </TabsList>
-          {isManager && (
-            <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }}>
-              <DialogTrigger asChild>
-                <Button><Plus className="h-4 w-4" /> תשלום חדש</Button>
-              </DialogTrigger>
-              <PaymentDialog
-                editing={editing}
-                clients={clients}
-                sites={sites}
-                onClose={() => { setDialogOpen(false); setEditing(null); }}
-              />
-            </Dialog>
-          )}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={filtered.length === 0}>
+              <Download className="h-4 w-4 ml-1" /> ייצוא Excel
+            </Button>
+            {isManager && (
+              <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="h-4 w-4" /> תשלום חדש</Button>
+                </DialogTrigger>
+                <PaymentDialog
+                  editing={editing}
+                  clients={clients}
+                  sites={sites}
+                  onClose={() => { setDialogOpen(false); setEditing(null); }}
+                />
+              </Dialog>
+            )}
+          </div>
         </div>
 
         {/* ── GAP-023: Advanced filters ── */}

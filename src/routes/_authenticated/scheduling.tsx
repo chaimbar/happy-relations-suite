@@ -452,7 +452,8 @@ function WeeklyView({ assignments, employees, days, isManager, onDelete, onMove,
   };
 
   return (
-    <div className="grid grid-cols-7 gap-2">
+    <div className="overflow-x-auto pb-2">
+    <div className="grid grid-cols-7 gap-2 min-w-[760px] lg:min-w-0">
       {days.map((day) => {
         const dateStr = format(day, "yyyy-MM-dd");
         const dayAssignments = assignments.filter((a) => a.date === dateStr);
@@ -511,6 +512,7 @@ function WeeklyView({ assignments, employees, days, isManager, onDelete, onMove,
           </div>
         );
       })}
+    </div>
     </div>
   );
 }
@@ -651,7 +653,7 @@ function SiteView({ assignments, sites, days, isManager, onDelete, onAdd, onMove
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="grid grid-cols-7 gap-1.5">
+              <div className="overflow-x-auto"><div className="grid grid-cols-7 gap-1.5 min-w-[560px] lg:min-w-0">
                 {days.map((day) => {
                   const dateStr = format(day, "yyyy-MM-dd");
                   const dayA = siteAll.filter((a) => a.date === dateStr);
@@ -685,7 +687,7 @@ function SiteView({ assignments, sites, days, isManager, onDelete, onAdd, onMove
                     </div>
                   );
                 })}
-              </div>
+              </div></div>
             </CardContent>
           </Card>
         );
@@ -729,7 +731,7 @@ function EmployeeView({ assignments, employees, days, isManager, onDelete, onAdd
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="grid grid-cols-7 gap-1.5">
+              <div className="overflow-x-auto"><div className="grid grid-cols-7 gap-1.5 min-w-[560px] lg:min-w-0">
                 {days.map((day) => {
                   const dateStr = format(day, "yyyy-MM-dd");
                   const dayA = empAll.filter((a) => a.date === dateStr);
@@ -773,7 +775,7 @@ function EmployeeView({ assignments, employees, days, isManager, onDelete, onAdd
                     </div>
                   );
                 })}
-              </div>
+              </div></div>
             </CardContent>
           </Card>
         );
