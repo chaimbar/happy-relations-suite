@@ -26,6 +26,7 @@ export type Database = {
           shift_type: string
           site_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           cost_estimated?: number | null
@@ -38,6 +39,7 @@ export type Database = {
           shift_type?: string
           site_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           cost_estimated?: number | null
@@ -50,6 +52,7 @@ export type Database = {
           shift_type?: string
           site_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -174,6 +177,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           address?: string | null
@@ -185,6 +189,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           address?: string | null
@@ -196,6 +201,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -384,6 +390,69 @@ export type Database = {
           },
         ]
       }
+      pricing_scenarios: {
+        Row: {
+          applied_buffer_pct: number
+          client_id: string | null
+          created_at: string
+          desired_margin_pct: number
+          estimated_labor_cost: number
+          estimated_materials_cost: number
+          id: string
+          input_mode: string
+          inputs: Json | null
+          name: string
+          suggested_price: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          applied_buffer_pct?: number
+          client_id?: string | null
+          created_at?: string
+          desired_margin_pct?: number
+          estimated_labor_cost?: number
+          estimated_materials_cost?: number
+          id?: string
+          input_mode: string
+          inputs?: Json | null
+          name: string
+          suggested_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          applied_buffer_pct?: number
+          client_id?: string | null
+          created_at?: string
+          desired_margin_pct?: number
+          estimated_labor_cost?: number
+          estimated_materials_cost?: number
+          id?: string
+          input_mode?: string
+          inputs?: Json | null
+          name?: string
+          suggested_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_scenarios_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_balance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_scenarios_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -419,6 +488,7 @@ export type Database = {
           notes: string | null
           site_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           amount_actual?: number
@@ -430,6 +500,7 @@ export type Database = {
           notes?: string | null
           site_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           amount_actual?: number
@@ -441,6 +512,7 @@ export type Database = {
           notes?: string | null
           site_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -479,6 +551,7 @@ export type Database = {
           sort_order: number | null
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -492,6 +565,7 @@ export type Database = {
           sort_order?: number | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -505,6 +579,7 @@ export type Database = {
           sort_order?: number | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -685,6 +760,16 @@ export type Database = {
       }
     }
     Functions: {
+      get_all_users_for_admin: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -696,7 +781,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "team_manager" | "employee"
       employee_status: "active" | "inactive"
-      site_status: "active" | "completed" | "on_hold" | "paused"
+      site_status: "active" | "completed" | "on_hold" | "paused" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -826,7 +911,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "team_manager", "employee"],
       employee_status: ["active", "inactive"],
-      site_status: ["active", "completed", "on_hold", "paused"],
+      site_status: ["active", "completed", "on_hold", "paused", "cancelled"],
     },
   },
 } as const
