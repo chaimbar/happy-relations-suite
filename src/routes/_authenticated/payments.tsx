@@ -175,7 +175,7 @@ function PaymentsPage() {
       if (dateTo && p.payment_date > dateTo) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        const clientName = p.sites?.clients?.full_name ?? "";
+        const clientName = p.clients?.full_name ?? "";
         const siteName = p.sites?.name ?? "";
         if (
           !clientName.toLowerCase().includes(q) &&
