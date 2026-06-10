@@ -620,7 +620,7 @@ function PaymentDialog({
 }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
-    client_id: editing?.sites?.client_id ?? "",
+    client_id: editing?.client_id ?? "",
     site_id: editing?.site_id ?? "",
     amount: editing?.amount?.toString() ?? "",
     payment_date: editing?.payment_date ?? new Date().toISOString().slice(0, 10),
