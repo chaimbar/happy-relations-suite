@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, UserCog, Users, Building2, Calendar, MapPin, Wallet,
-  DollarSign, Package, TrendingUp, Calculator, ShieldCheck, MoonStar,
+  DollarSign, Package, TrendingUp, Calculator, ShieldCheck, MoonStar, History,
 } from "lucide-react";
 
 import {
@@ -32,6 +32,7 @@ const COMMANDS: Cmd[] = [
   { title: "שכר בפועל", to: "/salaries", icon: DollarSign, group: "ניהול", managerOnly: true },
   { title: "רווחיות", to: "/profitability", icon: TrendingUp, group: "ניהול", managerOnly: true },
   { title: "סימולטור תמחור", to: "/pricing-simulator", icon: Calculator, group: "ניהול", managerOnly: true },
+  { title: "היסטוריית פעולות", to: "/activity-log", icon: History, group: "ניהול", managerOnly: true },
   { title: "ניהול משתמשים", to: "/users", icon: ShieldCheck, group: "מערכת", adminOnly: true },
 ];
 

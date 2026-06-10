@@ -16,6 +16,7 @@ import {
   KeyRound,
   Calculator,
   MapPin,
+  History,
 } from "lucide-react";
 
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
@@ -59,6 +60,7 @@ const futureItems: NavItem[] = [
   { title: "חומרים", url: "/materials", icon: Package },
   { title: "רווחיות", url: "/profitability", icon: TrendingUp, managerOnly: true },
   { title: "סימולטור תמחור", url: "/pricing-simulator", icon: Calculator, managerOnly: true },
+  { title: "היסטוריית פעולות", url: "/activity-log", icon: History, managerOnly: true },
 ];
 
 export function AppSidebar() {

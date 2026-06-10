@@ -58,6 +58,12 @@ type Employee = {
   start_date: string | null;
   timewatch_employee_id: string | null;
   notes: string | null;
+  managed_by: string | null;
+};
+
+type TeamManager = {
+  id: string;
+  full_name: string | null;
 };
 
 type Assignment = {
@@ -201,7 +207,8 @@ function useEmployees() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Employee[];
+      // stale generated types — employees.managed_by missing from types.ts
+      return data as unknown as Employee[];
     },
     staleTime: 30_000, // 30 s — avoids refetch on tab-switch
   });
@@ -239,6 +246,30 @@ function useEmployeeSalaries(employeeId: string | null) {
         .order("month", { ascending: false });
       if (error) throw error;
       return data as SalaryRecord[];
+    },
+    staleTime: 60_000,
+  });
+}
+
+/** Team managers (user_roles role='team_manager' → profiles) — admin only */
+function useTeamManagers(enabled: boolean) {
+  return useQuery({
+    queryKey: ["team-managers"],
+    enabled,
+    queryFn: async () => {
+      const { data: roleRows, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "team_manager");
+      if (rolesError) throw rolesError;
+      const ids = (roleRows ?? []).map((r) => r.user_id);
+      if (ids.length === 0) return [] as TeamManager[];
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", ids);
+      if (error) throw error;
+      return (data ?? []) as TeamManager[];
     },
     staleTime: 60_000,
   });
@@ -969,12 +1000,18 @@ function EmployeeSheet({
    TAB: פרטים
 ───────────────────────────────────────── */
 function EmployeeDetailsTab({ emp }: { emp: Employee }) {
+  const { isAdmin } = useAuth();
+  const { data: managers = [] } = useTeamManagers(isAdmin);
   const estimatedMonthly = emp.monthly_cost_actual ?? emp.daily_cost_estimated * 22;
   const sen = calcSeniority(emp.start_date);
+  const managerName = isAdmin && emp.managed_by
+    ? managers.find((m) => m.id === emp.managed_by)?.full_name ?? null
+    : null;
 
   const rows: { label: string; value?: string | null; dir?: "ltr"; note?: string; href?: string }[] = [
     { label: "תפקיד",               value: emp.job_title },
     { label: "סוג העסקה",           value: emp.employment_type },
+    { label: "מנהל צוות",           value: managerName },
     { label: "טלפון",               value: emp.phone, dir: "ltr", href: emp.phone ? `tel:${emp.phone}` : undefined },
     { label: 'ת"ז / מזהה',         value: emp.id_number },
     { label: "סטטוס",               value: emp.status === "active" ? "פעיל" : "לא פעיל" },
@@ -1310,13 +1347,16 @@ const EMPTY_FORM = {
   monthly_cost_actual:   "",
   timewatch_employee_id: "",
   notes:                 "",
+  managed_by:            "none",
 };
 
 function EmployeeDialog({
   editing, onClose,
 }: { editing: Employee | null; onClose: () => void }) {
   const qc = useQueryClient();
+  const { isAdmin } = useAuth();
   const [form, setForm] = useState(EMPTY_FORM);
+  const { data: managers = [] } = useTeamManagers(isAdmin);
 
   // Sync form whenever the editing target changes
   useEffect(() => {
@@ -1335,6 +1375,7 @@ function EmployeeDialog({
                                 : "",
         timewatch_employee_id: editing.timewatch_employee_id ?? "",
         notes:                 editing.notes ?? "",
+        managed_by:            editing.managed_by ?? "none",
       });
     } else {
       setForm(EMPTY_FORM);
@@ -1361,13 +1402,15 @@ function EmployeeDialog({
         monthly_cost_actual:   form.monthly_cost_actual ? Number(form.monthly_cost_actual) : null,
         timewatch_employee_id: form.timewatch_employee_id.trim() || null,
         notes:                 form.notes.trim()      || null,
+        managed_by:            form.managed_by !== "none" ? form.managed_by : null,
       };
       if (editing) {
-        const { error } = await supabase.from("employees").update(payload).eq("id", editing.id);
+        // cast: managed_by missing from stale generated types
+        const { error } = await supabase.from("employees").update(payload as never).eq("id", editing.id);
         if (error) throw error;
       } else {
         const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("employees").insert({ ...payload, user_id: u.user!.id });
+        const { error } = await supabase.from("employees").insert({ ...payload, user_id: u.user!.id } as never);
         if (error) throw error;
       }
     },
@@ -1458,6 +1501,22 @@ function EmployeeDialog({
             onChange={(e) => f("timewatch_employee_id", e.target.value)}
           />
         </div>
+
+        {/* מנהל צוות אחראי — admin בלבד */}
+        {isAdmin && (
+          <div className="space-y-1.5">
+            <Label>מנהל צוות אחראי</Label>
+            <Select value={form.managed_by} onValueChange={(v) => f("managed_by", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent dir="rtl">
+                <SelectItem value="none">ללא שיוך</SelectItem>
+                {managers.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>{m.full_name ?? m.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* סטטוס */}
         <div className="flex items-center justify-between rounded-xl border border-border/50 p-3">
