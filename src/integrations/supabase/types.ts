@@ -770,12 +770,29 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_employee_checkin_info: {
+        Args: { emp_id: string }
+        Returns: {
+          employee_name: string
+          employee_status: string
+          site_id: string
+          site_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      submit_checkin: {
+        Args: { emp_id: string; lat: number; long: number }
+        Returns: {
+          checked_in_at: string
+          employee_name: string
+          site_name: string
+        }[]
       }
     }
     Enums: {
