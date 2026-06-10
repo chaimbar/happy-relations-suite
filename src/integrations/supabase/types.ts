@@ -14,14 +14,163 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          cost_estimated: number | null
+          created_at: string
+          created_by: string | null
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          shift_type: string
+          site_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cost_estimated?: number | null
+          created_at?: string
+          created_by?: string | null
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          shift_type?: string
+          site_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cost_estimated?: number | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          shift_type?: string
+          site_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site_profitability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      check_ins: {
+        Row: {
+          checked_in_at: string
+          created_at: string
+          employee_id: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          site_id: string | null
+        }
+        Insert: {
+          checked_in_at?: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          site_id?: string | null
+        }
+        Update: {
+          checked_in_at?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          site_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_ins_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site_profitability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_ins_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
           created_at: string
           created_by: string | null
           email: string | null
+          full_name: string
           id: string
-          name: string
           notes: string | null
           phone: string | null
           updated_at: string
@@ -31,8 +180,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          full_name: string
           id?: string
-          name: string
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -42,8 +191,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          full_name?: string
           id?: string
-          name?: string
           notes?: string | null
           phone?: string | null
           updated_at?: string
@@ -54,43 +203,186 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          daily_cost_estimate: number
+          daily_cost_estimated: number
+          employment_type: string | null
           full_name: string
           id: string
-          identifier: string | null
+          id_number: string | null
+          job_title: string | null
+          managed_by: string | null
           monthly_cost_actual: number | null
           notes: string | null
           phone: string | null
+          start_date: string | null
           status: Database["public"]["Enums"]["employee_status"]
+          timewatch_employee_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
-          daily_cost_estimate?: number
+          daily_cost_estimated?: number
+          employment_type?: string | null
           full_name: string
           id?: string
-          identifier?: string | null
+          id_number?: string | null
+          job_title?: string | null
+          managed_by?: string | null
           monthly_cost_actual?: number | null
           notes?: string | null
           phone?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
+          timewatch_employee_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
-          daily_cost_estimate?: number
+          daily_cost_estimated?: number
+          employment_type?: string | null
           full_name?: string
           id?: string
-          identifier?: string | null
+          id_number?: string | null
+          job_title?: string | null
+          managed_by?: string | null
           monthly_cost_actual?: number | null
           notes?: string | null
           phone?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
+          timewatch_employee_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
+      }
+      materials: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          quantity: number
+          site_id: string
+          total_price: number
+          unit_price: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          quantity?: number
+          site_id: string
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          quantity?: number
+          site_id?: string
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site_profitability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          reference: string | null
+          site_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          client_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          reference?: string | null
+          site_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          reference?: string | null
+          site_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_balance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site_profitability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -116,10 +408,126 @@ export type Database = {
         }
         Relationships: []
       }
-      projects: {
+      salary_records: {
+        Row: {
+          amount_actual: number
+          created_at: string
+          employee_id: string
+          id: string
+          is_paid: boolean
+          month: string
+          notes: string | null
+          site_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_actual?: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_paid?: boolean
+          month: string
+          notes?: string | null
+          site_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_actual?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_paid?: boolean
+          month?: string
+          notes?: string | null
+          site_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_records_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site_profitability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_records_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_stages: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          payment_amount: number | null
+          site_id: string
+          sort_order: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          payment_amount?: number | null
+          site_id: string
+          sort_order?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          payment_amount?: number | null
+          site_id?: string
+          sort_order?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_stages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site_profitability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_stages_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sites: {
         Row: {
           address: string | null
           client_id: string | null
+          contract_price: number
           created_at: string
           created_by: string | null
           end_date: string | null
@@ -129,13 +537,14 @@ export type Database = {
           name: string
           notes: string | null
           start_date: string | null
-          status: Database["public"]["Enums"]["project_status"]
-          total_price: number
+          status: Database["public"]["Enums"]["site_status"]
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           address?: string | null
           client_id?: string | null
+          contract_price?: number
           created_at?: string
           created_by?: string | null
           end_date?: string | null
@@ -145,13 +554,14 @@ export type Database = {
           name: string
           notes?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
-          total_price?: number
+          status?: Database["public"]["Enums"]["site_status"]
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           address?: string | null
           client_id?: string | null
+          contract_price?: number
           created_at?: string
           created_by?: string | null
           end_date?: string | null
@@ -161,11 +571,18 @@ export type Database = {
           name?: string
           notes?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["project_status"]
-          total_price?: number
+          status?: Database["public"]["Enums"]["site_status"]
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_balance"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_client_id_fkey"
             columns: ["client_id"]
@@ -198,7 +615,74 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      client_balance: {
+        Row: {
+          balance_due: number | null
+          full_name: string | null
+          id: string | null
+          total_invoiced: number | null
+          total_paid: number | null
+          total_sites: number | null
+        }
+        Relationships: []
+      }
+      site_profitability: {
+        Row: {
+          client_id: string | null
+          contract_price: number | null
+          cost_variance: number | null
+          id: string | null
+          labor_cost_actual: number | null
+          labor_cost_estimated: number | null
+          materials_cost: number | null
+          name: string | null
+          profit_actual: number | null
+          profit_estimated: number | null
+          status: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          contract_price?: number | null
+          cost_variance?: never
+          id?: string | null
+          labor_cost_actual?: never
+          labor_cost_estimated?: never
+          materials_cost?: number | null
+          name?: string | null
+          profit_actual?: never
+          profit_estimated?: never
+          status?: never
+        }
+        Update: {
+          client_id?: string | null
+          contract_price?: number | null
+          cost_variance?: never
+          id?: string | null
+          labor_cost_actual?: never
+          labor_cost_estimated?: never
+          materials_cost?: number | null
+          name?: string | null
+          profit_actual?: never
+          profit_estimated?: never
+          status?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_balance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
@@ -212,7 +696,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "team_manager" | "employee"
       employee_status: "active" | "inactive"
-      project_status: "active" | "completed" | "on_hold"
+      site_status: "active" | "completed" | "on_hold" | "paused"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -342,7 +826,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "team_manager", "employee"],
       employee_status: ["active", "inactive"],
-      project_status: ["active", "completed", "on_hold"],
+      site_status: ["active", "completed", "on_hold", "paused"],
     },
   },
 } as const
