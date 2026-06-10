@@ -12,15 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as CheckinEmpIdRouteImport } from './routes/checkin.$empId'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedSchedulingRouteImport } from './routes/_authenticated/scheduling'
+import { Route as AuthenticatedSalariesRouteImport } from './routes/_authenticated/salaries'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedProfitabilityRouteImport } from './routes/_authenticated/profitability'
+import { Route as AuthenticatedPricingSimulatorRouteImport } from './routes/_authenticated/pricing-simulator'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
-import { Route as AuthenticatedSalariesRouteImport } from './routes/_authenticated/salaries'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -36,6 +39,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const CheckinEmpIdRoute = CheckinEmpIdRouteImport.update({
+  id: '/checkin/$empId',
+  path: '/checkin/$empId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -44,6 +52,11 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
 const AuthenticatedSchedulingRoute = AuthenticatedSchedulingRouteImport.update({
   id: '/scheduling',
   path: '/scheduling',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSalariesRoute = AuthenticatedSalariesRouteImport.update({
+  id: '/salaries',
+  path: '/salaries',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
@@ -57,14 +70,15 @@ const AuthenticatedProfitabilityRoute =
     path: '/profitability',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPricingSimulatorRoute =
+  AuthenticatedPricingSimulatorRouteImport.update({
+    id: '/pricing-simulator',
+    path: '/pricing-simulator',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSalariesRoute = AuthenticatedSalariesRouteImport.update({
-  id: '/salaries',
-  path: '/salaries',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
@@ -82,46 +96,60 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAttendanceRoute = AuthenticatedAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
+  '/pricing-simulator': typeof AuthenticatedPricingSimulatorRoute
   '/profitability': typeof AuthenticatedProfitabilityRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/salaries': typeof AuthenticatedSalariesRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/checkin/$empId': typeof CheckinEmpIdRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
+  '/pricing-simulator': typeof AuthenticatedPricingSimulatorRoute
   '/profitability': typeof AuthenticatedProfitabilityRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/salaries': typeof AuthenticatedSalariesRoute
   '/scheduling': typeof AuthenticatedSchedulingRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/checkin/$empId': typeof CheckinEmpIdRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
+  '/_authenticated/pricing-simulator': typeof AuthenticatedPricingSimulatorRoute
   '/_authenticated/profitability': typeof AuthenticatedProfitabilityRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/salaries': typeof AuthenticatedSalariesRoute
   '/_authenticated/scheduling': typeof AuthenticatedSchedulingRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/checkin/$empId': typeof CheckinEmpIdRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
@@ -129,47 +157,57 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/attendance'
     | '/clients'
     | '/employees'
     | '/materials'
     | '/payments'
+    | '/pricing-simulator'
     | '/profitability'
     | '/projects'
     | '/salaries'
     | '/scheduling'
     | '/users'
+    | '/checkin/$empId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/attendance'
     | '/clients'
     | '/employees'
     | '/materials'
     | '/payments'
+    | '/pricing-simulator'
     | '/profitability'
     | '/projects'
     | '/salaries'
     | '/scheduling'
     | '/users'
+    | '/checkin/$empId'
     | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/attendance'
     | '/_authenticated/clients'
     | '/_authenticated/employees'
     | '/_authenticated/materials'
     | '/_authenticated/payments'
+    | '/_authenticated/pricing-simulator'
     | '/_authenticated/profitability'
     | '/_authenticated/projects'
     | '/_authenticated/salaries'
     | '/_authenticated/scheduling'
     | '/_authenticated/users'
+    | '/checkin/$empId'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CheckinEmpIdRoute: typeof CheckinEmpIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -195,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/checkin/$empId': {
+      id: '/checkin/$empId'
+      path: '/checkin/$empId'
+      fullPath: '/checkin/$empId'
+      preLoaderRoute: typeof CheckinEmpIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/users': {
       id: '/_authenticated/users'
       path: '/users'
@@ -202,18 +247,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/salaries': {
-      id: '/_authenticated/salaries'
-      path: '/salaries'
-      fullPath: '/salaries'
-      preLoaderRoute: typeof AuthenticatedSalariesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/scheduling': {
       id: '/_authenticated/scheduling'
       path: '/scheduling'
       fullPath: '/scheduling'
       preLoaderRoute: typeof AuthenticatedSchedulingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/salaries': {
+      id: '/_authenticated/salaries'
+      path: '/salaries'
+      fullPath: '/salaries'
+      preLoaderRoute: typeof AuthenticatedSalariesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/projects': {
@@ -228,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/profitability'
       fullPath: '/profitability'
       preLoaderRoute: typeof AuthenticatedProfitabilityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pricing-simulator': {
+      id: '/_authenticated/pricing-simulator'
+      path: '/pricing-simulator'
+      fullPath: '/pricing-simulator'
+      preLoaderRoute: typeof AuthenticatedPricingSimulatorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/payments': {
@@ -258,14 +310,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/attendance': {
+      id: '/_authenticated/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AuthenticatedAttendanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
+  AuthenticatedPricingSimulatorRoute: typeof AuthenticatedPricingSimulatorRoute
   AuthenticatedProfitabilityRoute: typeof AuthenticatedProfitabilityRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedSalariesRoute: typeof AuthenticatedSalariesRoute
@@ -275,10 +336,12 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
+  AuthenticatedPricingSimulatorRoute: AuthenticatedPricingSimulatorRoute,
   AuthenticatedProfitabilityRoute: AuthenticatedProfitabilityRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedSalariesRoute: AuthenticatedSalariesRoute,
@@ -293,6 +356,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  CheckinEmpIdRoute: CheckinEmpIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
