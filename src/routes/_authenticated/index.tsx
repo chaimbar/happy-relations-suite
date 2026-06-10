@@ -378,9 +378,9 @@ function Dashboard() {
                     formatter={(v: number) => [fmt(Number(v)), "רווח"]}
                     cursor={{ fill: "rgba(0,0,0,0.04)" }}
                   />
-                  <Bar dataKey="profit" radius={[6, 6, 0, 0]}>
+                  <Bar dataKey="profit" radius={[6, 6, 0, 0]} maxBarSize={64}>
                     {chartSites.map((s, i) => (
-                      <Cell key={i} fill={s.profit >= 0 ? "var(--chart-3)" : "var(--destructive)"} />
+                      <Cell key={i} fill={s.profit >= 0 ? "#10b981" : "#ef4444"} />
                     ))}
                   </Bar>
                 </BarChart>
