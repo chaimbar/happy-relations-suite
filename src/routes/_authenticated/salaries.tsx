@@ -181,7 +181,7 @@ function SalariesPage() {
               <Users className="h-4 w-4 text-blue-500" />
               <p className="text-xs text-muted-foreground">עובדים פעילים</p>
             </div>
-            <p className="text-2xl font-bold">
+            <p className="text-xl sm:text-2xl font-bold tabular-nums truncate">
               {employees.filter((e) => e.status === "active").length}
             </p>
           </CardContent>
@@ -192,7 +192,7 @@ function SalariesPage() {
               <TrendingDown className="h-4 w-4 text-orange-500" />
               <p className="text-xs text-muted-foreground">סך שכר (סינון)</p>
             </div>
-            <p className="text-2xl font-bold">{fmt(totalActual)}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums truncate">{fmt(totalActual)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -201,7 +201,7 @@ function SalariesPage() {
               <Circle className="h-4 w-4 text-red-500" />
               <p className="text-xs text-muted-foreground">לא שולם</p>
             </div>
-            <p className="text-2xl font-bold text-destructive">{fmt(totalUnpaid)}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums truncate text-destructive">{fmt(totalUnpaid)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -210,7 +210,7 @@ function SalariesPage() {
               <CheckCircle2 className="h-4 w-4 text-green-500" />
               <p className="text-xs text-muted-foreground">שולם</p>
             </div>
-            <p className="text-2xl font-bold text-green-600">{fmt(totalActual - totalUnpaid)}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums truncate text-green-600">{fmt(totalActual - totalUnpaid)}</p>
           </CardContent>
         </Card>
       </div>

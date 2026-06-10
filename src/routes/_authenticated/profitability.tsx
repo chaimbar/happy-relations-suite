@@ -94,7 +94,7 @@ function ProfitabilityPage() {
               <DollarSign className="h-4 w-4 text-blue-500" />
               <p className="text-xs text-muted-foreground">הכנסה כוללת</p>
             </div>
-            <p className="text-2xl font-bold">{fmt(totalRevenue)}</p>
+            <p className="text-xl xl:text-2xl font-bold tabular-nums truncate">{fmt(totalRevenue)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -103,7 +103,7 @@ function ProfitabilityPage() {
               <TrendingUp className="h-4 w-4 text-green-500" />
               <p className="text-xs text-muted-foreground">רווח משוער</p>
             </div>
-            <p className={`text-2xl font-bold ${totalProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
+            <p className={`text-xl xl:text-2xl font-bold tabular-nums truncate ${totalProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
               {fmt(totalProfit)}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">מרווח {profitMargin}%</p>
@@ -115,7 +115,7 @@ function ProfitabilityPage() {
               <TrendingDown className="h-4 w-4 text-orange-500" />
               <p className="text-xs text-muted-foreground">עלות עובדים</p>
             </div>
-            <p className="text-2xl font-bold">{fmt(totalLaborCost)}</p>
+            <p className="text-xl xl:text-2xl font-bold tabular-nums truncate">{fmt(totalLaborCost)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -124,7 +124,7 @@ function ProfitabilityPage() {
               <Building2 className="h-4 w-4 text-purple-500" />
               <p className="text-xs text-muted-foreground">עלות חומרים</p>
             </div>
-            <p className="text-2xl font-bold">{fmt(totalMaterials)}</p>
+            <p className="text-xl xl:text-2xl font-bold tabular-nums truncate">{fmt(totalMaterials)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -133,7 +133,7 @@ function ProfitabilityPage() {
               <AlertTriangle className="h-4 w-4 text-destructive" />
               <p className="text-xs text-muted-foreground">חובות פתוחים</p>
             </div>
-            <p className="text-2xl font-bold text-destructive">{fmt(totalDebt)}</p>
+            <p className="text-xl xl:text-2xl font-bold tabular-nums truncate text-destructive">{fmt(totalDebt)}</p>
           </CardContent>
         </Card>
       </div>

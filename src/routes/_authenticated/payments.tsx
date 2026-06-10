@@ -239,14 +239,14 @@ function PaymentsPage() {
   return (
     <div className="space-y-5">
       {/* ── Stats ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="h-4 w-4 text-blue-500" />
               <p className="text-xs text-muted-foreground">סך חוזים</p>
             </div>
-            <p className="text-2xl font-bold">{fmt(totalInvoiced)}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums truncate">{fmt(totalInvoiced)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -255,7 +255,7 @@ function PaymentsPage() {
               <TrendingUp className="h-4 w-4 text-green-500" />
               <p className="text-xs text-muted-foreground">סך תקבולים</p>
             </div>
-            <p className="text-2xl font-bold text-green-600">{fmt(totalPaid)}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums truncate text-green-600">{fmt(totalPaid)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -264,7 +264,7 @@ function PaymentsPage() {
               <AlertTriangle className="h-4 w-4 text-destructive" />
               <p className="text-xs text-muted-foreground">חובות פתוחים</p>
             </div>
-            <p className="text-2xl font-bold text-destructive">{fmt(totalDebt)}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular-nums truncate text-destructive">{fmt(totalDebt)}</p>
           </CardContent>
         </Card>
       </div>

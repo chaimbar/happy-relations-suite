@@ -262,13 +262,13 @@ const KPICard = memo(function KPICard({
       className="rounded-2xl border border-border/50 p-5"
       style={{ background: GRADIENT_CARDS[gradient] ?? GRADIENT_CARDS.blue }}
     >
-      <div className="flex items-start justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className="p-2 rounded-xl bg-white/80">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-muted-foreground min-w-0 truncate">{title}</p>
+        <div className="p-2 rounded-xl bg-white/80 shrink-0">
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
-      <div className="text-3xl font-bold mt-3">{value}</div>
+      <div className="text-2xl sm:text-3xl font-bold mt-3 tabular-nums truncate">{value}</div>
       {subText && <p className="text-xs text-muted-foreground mt-1">{subText}</p>}
     </div>
   );

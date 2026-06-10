@@ -195,9 +195,9 @@ function Dashboard() {
         <Link to="/employees">
           <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">עובדים פעילים</p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">עובדים פעילים</p>
                   <p className="font-display text-3xl font-bold mt-2">{stats?.activeEmployees ?? "—"}</p>
                   <p className="text-xs text-muted-foreground mt-1">מתוך {stats?.employees ?? 0}</p>
                 </div>
@@ -212,9 +212,9 @@ function Dashboard() {
         <Link to="/projects">
           <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">אתרים פעילים</p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">אתרים פעילים</p>
                   <p className="font-display text-3xl font-bold mt-2">{stats?.activeProjects ?? "—"}</p>
                   <p className="text-xs text-muted-foreground mt-1">מתוך {stats?.projects ?? 0}</p>
                 </div>
@@ -230,9 +230,9 @@ function Dashboard() {
         <Link to="/clients">
           <Card className="card-lift hover:shadow-md cursor-pointer">
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">לקוחות</p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">לקוחות</p>
                   <p className="font-display text-3xl font-bold mt-2">{stats?.clients ?? "—"}</p>
                   <p className="text-xs text-muted-foreground mt-1">סך הכל</p>
                 </div>
@@ -249,10 +249,10 @@ function Dashboard() {
         <Link to="/profitability">
           <Card className="card-lift hover:shadow-md cursor-pointer">
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">רווח נקי</p>
-                  <p className={`font-display text-2xl font-bold mt-2 ${(stats?.totalProfit ?? 0) >= 0 ? "text-green-600" : "text-destructive"}`}>
+                  <p className={`font-display text-xl lg:text-2xl font-bold mt-2 tabular-nums truncate ${(stats?.totalProfit ?? 0) >= 0 ? "text-green-600" : "text-destructive"}`}>
                     {stats ? fmt(stats.totalProfit) : "—"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">מרווח {stats?.profitMargin ?? 0}%</p>
@@ -268,18 +268,18 @@ function Dashboard() {
       </div>
 
       {/* Financial summary row */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {isManager && (
         <Link to="/payments">
           <Card className="card-lift hover:shadow-md cursor-pointer">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 shrink-0">
+            <CardContent className="p-4 sm:p-5 flex items-center gap-3">
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-green-50 shrink-0">
                 <Wallet className="h-6 w-6 text-green-600" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">גבייה החודש</p>
-                <p className="text-2xl font-bold text-green-600">{stats ? fmt(stats.monthlyCollected) : "—"}</p>
-                <p className="text-xs text-muted-foreground">תשלומים שנכנסו</p>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">גבייה החודש</p>
+                <p className="text-xl lg:text-2xl font-bold text-green-600 tabular-nums truncate">{stats ? fmt(stats.monthlyCollected) : "—"}</p>
+                <p className="text-xs text-muted-foreground truncate">תשלומים שנכנסו</p>
               </div>
             </CardContent>
           </Card>
@@ -289,35 +289,35 @@ function Dashboard() {
         {isManager && (
         <Link to="/payments">
           <Card className={`card-lift hover:shadow-md cursor-pointer ${(stats?.totalDebt ?? 0) > 0 ? "border-destructive/30" : ""}`}>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 shrink-0">
+            <CardContent className="p-4 sm:p-5 flex items-center gap-3">
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-red-50 shrink-0">
                 <AlertTriangle className={`h-6 w-6 ${(stats?.totalDebt ?? 0) > 0 ? "text-destructive" : "text-muted-foreground"}`} />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">חובות פתוחים</p>
-                <p className={`text-2xl font-bold ${(stats?.totalDebt ?? 0) > 0 ? "text-destructive" : "text-green-600"}`}>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">חובות פתוחים</p>
+                <p className={`text-xl lg:text-2xl font-bold tabular-nums truncate ${(stats?.totalDebt ?? 0) > 0 ? "text-destructive" : "text-green-600"}`}>
                   {stats ? fmt(stats.totalDebt) : "—"}
                 </p>
-                <p className="text-xs text-muted-foreground">{stats?.openPayments ?? 0} לקוחות עם חוב</p>
+                <p className="text-xs text-muted-foreground truncate">{stats?.openPayments ?? 0} לקוחות עם חוב</p>
               </div>
             </CardContent>
           </Card>
         </Link>
         )}
 
-        <Link to="/scheduling" className={isManager ? "" : "sm:col-span-3"}>
+        <Link to="/scheduling" className={isManager ? "" : "sm:col-span-2 lg:col-span-3"}>
           <Card className="card-lift hover:shadow-md cursor-pointer">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 shrink-0">
+            <CardContent className="p-4 sm:p-5 flex items-center gap-3">
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-blue-50 shrink-0">
                 <Calendar className="h-6 w-6 text-blue-500" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">שיבוצים היום</p>
-                <p className="text-2xl font-bold">{stats?.todayAssignments ?? "—"}</p>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">שיבוצים היום</p>
+                <p className="text-xl lg:text-2xl font-bold tabular-nums">{stats?.todayAssignments ?? "—"}</p>
                 {(stats?.unassignedCount ?? 0) > 0 ? (
-                  <p className="text-xs text-orange-500">{stats!.unassignedCount} עובדים ללא שיבוץ</p>
+                  <p className="text-xs text-orange-500 truncate">{stats!.unassignedCount} עובדים ללא שיבוץ</p>
                 ) : (
-                  <p className="text-xs text-green-600">כולם משובצים</p>
+                  <p className="text-xs text-green-600 truncate">כולם משובצים</p>
                 )}
               </div>
             </CardContent>
