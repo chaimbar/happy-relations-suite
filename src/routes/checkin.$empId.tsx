@@ -63,8 +63,8 @@ function CheckinPage() {
       const { lat, long } = await getLocation();
       const { data, error } = await supabase.rpc("submit_checkin", {
         emp_id: empId,
-        lat,
-        long,
+        lat: lat as number,
+        long: long as number,
       });
       if (error) throw error;
       const row = (data as { employee_name: string; site_name: string; checked_in_at: string }[] | null)?.[0];
