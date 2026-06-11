@@ -200,7 +200,7 @@ function UsersPageInner() {
           שגיאה בטעינת המשתמשים
         </div>
       ) : (
-        <div className="rounded-2xl border border-border/50 overflow-hidden bg-white">
+        <div className="rounded-2xl border border-border/50 overflow-hidden bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border/50">
               <tr>

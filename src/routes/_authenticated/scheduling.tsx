@@ -471,7 +471,7 @@ function WeeklyView({ assignments, employees, days, isManager, onDelete, onMove,
                 ? "border-blue-400 bg-blue-50/70 ring-2 ring-blue-200"
                 : isToday
                 ? "border-blue-400 bg-blue-50/40"
-                : "bg-white border-border/60"
+                : "bg-card border-border/60"
             }`}
           >
             <div className="flex items-center justify-between mb-1">

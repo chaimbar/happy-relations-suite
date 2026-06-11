@@ -92,10 +92,10 @@ type ViewType    = "grid" | "list";
 ───────────────────────────────────────── */
 const GRADIENT_BTN = "linear-gradient(145deg, #0F83F0, #1565C0)";
 const GRADIENT_CARDS: Record<string, string> = {
-  blue:   "linear-gradient(to right bottom, rgba(15,131,240,0.08), white)",
-  green:  "linear-gradient(to right bottom, rgba(34,197,94,0.08), white)",
-  orange: "linear-gradient(to right bottom, rgba(249,115,22,0.08), white)",
-  purple: "linear-gradient(to right bottom, rgba(139,92,246,0.08), white)",
+  blue:   "linear-gradient(to right bottom, rgba(15,131,240,0.08), var(--card))",
+  green:  "linear-gradient(to right bottom, rgba(34,197,94,0.08), var(--card))",
+  orange: "linear-gradient(to right bottom, rgba(249,115,22,0.08), var(--card))",
+  purple: "linear-gradient(to right bottom, rgba(139,92,246,0.08), var(--card))",
 };
 
 const AVATAR_COLORS = [
@@ -292,7 +292,7 @@ const KPICard = memo(function KPICard({
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-muted-foreground min-w-0 truncate">{title}</p>
-        <div className="p-2 rounded-xl bg-white/80 shrink-0">
+        <div className="p-2 rounded-xl bg-background/70 shrink-0">
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
@@ -577,7 +577,7 @@ function EmployeesPage() {
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-border/50 overflow-hidden bg-white">
+        <div className="rounded-2xl border border-border/50 overflow-hidden bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border/50">
               <tr>
@@ -741,7 +741,7 @@ const EmployeeCard = memo(function EmployeeCard({
 
   return (
     <div
-      className="rounded-2xl border border-border/50 bg-white p-5 hover:shadow-md transition-all cursor-pointer group"
+      className="rounded-2xl border border-border/50 bg-card p-5 hover:shadow-md transition-all cursor-pointer group"
       onClick={handleSelect}
     >
       {/* Header row */}
