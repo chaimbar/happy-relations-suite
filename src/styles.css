@@ -58,9 +58,13 @@
 :root {
   --radius: 0.75rem;
   /* Construction/Industrial palette: deep slate + amber accent */
-  --background: oklch(0.985 0.005 80);
+  /* Cool light-gray canvas so pure-white cards visibly float above it */
+  --background: oklch(0.965 0.006 250);
   --foreground: oklch(0.18 0.025 240);
   --card: oklch(1 0 0);
+  /* Premium layered card elevation (light) */
+  --shadow-card: 0 1px 2px -1px oklch(0.35 0.05 255 / 0.10), 0 6px 16px -8px oklch(0.35 0.05 255 / 0.14);
+  --shadow-card-hover: 0 2px 4px -2px oklch(0.35 0.05 255 / 0.12), 0 16px 32px -12px oklch(0.35 0.05 255 / 0.20);
   --card-foreground: oklch(0.18 0.025 240);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.025 240);
@@ -78,8 +82,8 @@
   --success-foreground: oklch(0.98 0.005 80);
   --warning: oklch(0.78 0.16 65);
   --warning-foreground: oklch(0.2 0.04 60);
-  --border: oklch(0.91 0.012 240);
-  --input: oklch(0.91 0.012 240);
+  --border: oklch(0.895 0.013 250);
+  --input: oklch(0.9 0.013 250);
   --ring: oklch(0.55 0.06 245);
   --chart-1: oklch(0.32 0.07 245);
   --chart-2: oklch(0.78 0.16 65);
@@ -119,6 +123,8 @@
   --warning-foreground: oklch(0.2 0.04 60);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
+  --shadow-card: 0 1px 2px -1px oklch(0 0 0 / 0.5), 0 8px 20px -8px oklch(0 0 0 / 0.55);
+  --shadow-card-hover: 0 2px 4px -2px oklch(0 0 0 / 0.55), 0 18px 36px -12px oklch(0 0 0 / 0.65);
   --ring: oklch(0.78 0.16 65);
   --chart-1: oklch(0.78 0.16 65);
   --chart-2: oklch(0.65 0.16 150);
@@ -202,6 +208,9 @@
     -webkit-backdrop-filter: blur(14px) saturate(1.5);
   }
 
+  /* Premium layered card elevation */
+  .shadow-card { box-shadow: var(--shadow-card); }
+
   /* Premium card hover lift */
   .card-lift {
     transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
@@ -209,7 +218,7 @@
   }
   .card-lift:hover {
     transform: translateY(-3px);
-    box-shadow: 0 18px 40px -20px color-mix(in oklch, var(--primary) 55%, transparent);
+    box-shadow: var(--shadow-card-hover);
     border-color: color-mix(in oklch, var(--accent) 40%, var(--border));
   }
 
