@@ -119,7 +119,7 @@ export function ChangePasswordDialog({
             <button
               type="submit"
               disabled={pending}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+              className="btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
               style={{ background: GRADIENT_BTN }}
             >
               {pending ? "שומר..." : "שמור סיסמה"}

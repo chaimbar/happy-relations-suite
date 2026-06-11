@@ -434,7 +434,7 @@ function EmployeesPage() {
             <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) closeDialog(); else setDialogOpen(true); }}>
               <DialogTrigger asChild>
                 <button
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                  className="flex items-center gap-2 px-4 py-2 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white"
                   style={{ background: GRADIENT_BTN }}
                 >
                   <Plus className="h-4 w-4" /> עובד חדש
@@ -686,7 +686,7 @@ function EmptyState({
         )}
         {isManager && (
           <button
-            className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
+            className="px-6 py-2.5 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white"
             style={{ background: GRADIENT_BTN }}
             onClick={onAdd}
           >
@@ -707,7 +707,7 @@ function ErrorState({ onRetry }: { onRetry?: () => void }) {
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-5 py-2 rounded-xl text-sm font-semibold text-white"
+          className="px-5 py-2 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white"
           style={{ background: GRADIENT_BTN }}
         >
           נסה שוב
@@ -1223,7 +1223,7 @@ function EmployeeSalaryTab({
         </div>
         <button
           onClick={() => setShowForm((p) => !p)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold text-white shrink-0"
+          className="flex items-center gap-2 px-3 py-1.5 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white shrink-0"
           style={{ background: GRADIENT_BTN }}
         >
           <Plus className="h-4 w-4" /> הוסף שכר
@@ -1542,7 +1542,7 @@ function EmployeeDialog({
           <button
             type="submit"
             disabled={saveM.isPending}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
+            className="px-4 py-2 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
             style={{ background: GRADIENT_BTN }}
           >
             {saveM.isPending ? "שומר..." : editing ? "עדכן" : "הוסף עובד"}

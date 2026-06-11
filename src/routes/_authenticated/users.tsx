@@ -180,7 +180,7 @@ function UsersPageInner() {
         </div>
         <button
           onClick={() => setAddOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shrink-0"
+          className="flex items-center gap-2 px-4 py-2 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white shrink-0"
           style={{ background: GRADIENT_BTN }}
         >
           <UserPlus className="h-4 w-4" /> הוסף משתמש
@@ -458,7 +458,7 @@ function AddUserDialog({
             <Button type="button" variant="outline" onClick={handleClose}>ביטול</Button>
             <button
               type="submit" disabled={isPending}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+              className="px-4 py-2 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white disabled:opacity-50"
               style={{ background: GRADIENT_BTN }}
             >
               {isPending ? "יוצר..." : "צור משתמש"}
@@ -518,7 +518,7 @@ function EditRoleDialog({
           <button
             onClick={() => onSubmit(role)}
             disabled={isPending}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+            className="px-4 py-2 btn-shine active:scale-[0.97] hover:-translate-y-0.5 transition-all rounded-xl text-sm font-semibold text-white disabled:opacity-50"
             style={{ background: GRADIENT_BTN }}
           >
             {isPending ? "שומר..." : "שמור"}
