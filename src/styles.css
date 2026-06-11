@@ -68,8 +68,9 @@
   --card-foreground: oklch(0.18 0.025 240);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.025 240);
-  --primary: oklch(0.32 0.07 245);
-  --primary-foreground: oklch(0.98 0.005 80);
+  /* Brand primary = vivid azure (matches the CTA gradient) for a unified, energetic look */
+  --primary: oklch(0.6 0.17 252);
+  --primary-foreground: oklch(0.99 0.01 250);
   --secondary: oklch(0.95 0.012 240);
   --secondary-foreground: oklch(0.25 0.04 240);
   --muted: oklch(0.96 0.008 240);
@@ -84,7 +85,7 @@
   --warning-foreground: oklch(0.2 0.04 60);
   --border: oklch(0.895 0.013 250);
   --input: oklch(0.9 0.013 250);
-  --ring: oklch(0.55 0.06 245);
+  --ring: oklch(0.6 0.14 252);
   --chart-1: oklch(0.32 0.07 245);
   --chart-2: oklch(0.78 0.16 65);
   --chart-3: oklch(0.62 0.16 150);
@@ -107,8 +108,9 @@
   --card-foreground: oklch(0.96 0.008 240);
   --popover: oklch(0.2 0.03 245);
   --popover-foreground: oklch(0.96 0.008 240);
-  --primary: oklch(0.78 0.16 65);
-  --primary-foreground: oklch(0.2 0.04 60);
+  /* Brand primary = vivid azure in dark too (amber stays as the accent) */
+  --primary: oklch(0.64 0.16 252);
+  --primary-foreground: oklch(0.99 0.01 250);
   --secondary: oklch(0.25 0.04 245);
   --secondary-foreground: oklch(0.96 0.008 240);
   --muted: oklch(0.25 0.04 245);
@@ -210,6 +212,20 @@
 
   /* Premium layered card elevation */
   .shadow-card { box-shadow: var(--shadow-card); }
+
+  /* Animated sheen that sweeps across a button on hover */
+  .btn-shine { position: relative; overflow: hidden; isolation: isolate; }
+  .btn-shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.38) 50%, transparent 75%);
+    transform: translateX(-150%);
+    transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .btn-shine:hover::after { transform: translateX(150%); }
 
   /* Premium card hover lift */
   .card-lift {
