@@ -106,6 +106,22 @@ function ClientsPage() {
 
   const deleteM = useMutation({
     mutationFn: async (id: string) => {
+      // A client can't be deleted while sites/payments still reference it (FK RESTRICT).
+      // Check first so we can show a clear message instead of a raw SQL error.
+      const [sitesRes, paysRes] = await Promise.all([
+        supabase.from("sites").select("id", { count: "exact", head: true }).eq("client_id", id),
+        supabase.from("payments").select("id", { count: "exact", head: true }).eq("client_id", id),
+      ]);
+      const siteCount = sitesRes.count ?? 0;
+      const payCount = paysRes.count ?? 0;
+      if (siteCount > 0 || payCount > 0) {
+        const parts: string[] = [];
+        if (siteCount > 0) parts.push(`${siteCount} אתרים`);
+        if (payCount > 0) parts.push(`${payCount} תשלומים`);
+        throw new Error(
+          `ללקוח משויכים ${parts.join(" ו-")}. יש למחוק או להעביר אותם תחילה (מדף האתרים / התשלומים).`,
+        );
+      }
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (error) throw error;
     },
@@ -113,7 +129,12 @@ function ClientsPage() {
       toast.success("לקוח נמחק");
       qc.invalidateQueries({ queryKey: ["clients"] });
     },
-    onError: (e: Error) => toast.error("מחיקה נכשלה", { description: e.message }),
+    onError: (e: Error) => {
+      const msg = /foreign key|violates|constraint/i.test(e.message)
+        ? "לא ניתן למחוק לקוח שמשויכים אליו אתרים או תשלומים. מחק אותם תחילה."
+        : e.message;
+      toast.error("לא ניתן למחוק", { description: msg });
+    },
   });
 
   const filtered = clients.filter((c) =>
