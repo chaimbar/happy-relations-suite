@@ -41,3 +41,4 @@
 - 2026-06-10: תיקוני פערים 2+3 מהאודיט (רן): activity-log UI, team scoping ישיר. migration בריפו — ממתין לאישור החלה על Supabase פרודקשן.
 - 2026-06-10: migration team_scoping_direct_and_audit_policy_fix הוחל על Supabase פרודקשן באישור חיים. advisors: אין ממצאים חדשים.
 - 2026-06-25 — תיקון לקוחות: opacity-0→גלוי. Views→security_invoker.
+- 2026-06-25: תיקון שמירת אתר — schema cache + לקוח חובה
