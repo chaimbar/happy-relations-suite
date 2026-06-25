@@ -677,9 +677,10 @@ function ProjectDialog({
   const saveM = useMutation({
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
+      if (!form.client_id) throw new Error("יש לבחור לקוח");
       const payload = {
         name: form.name.trim(),
-        client_id: form.client_id || null,
+        client_id: form.client_id,
         address: form.address.trim() || null,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
@@ -718,11 +719,10 @@ function ProjectDialog({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label>לקוח</Label>
-            <Select value={form.client_id || "_none"} onValueChange={(v) => setForm({ ...form, client_id: v === "_none" ? "" : v })}>
+            <Label>לקוח *</Label>
+            <Select value={form.client_id} onValueChange={(v) => setForm({ ...form, client_id: v })}>
               <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="_none">ללא</SelectItem>
                 {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
               </SelectContent>
             </Select>
