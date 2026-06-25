@@ -601,7 +601,7 @@ export type Database = {
       sites: {
         Row: {
           address: string | null
-          client_id: string | null
+          client_id: string
           contract_price: number
           created_at: string
           created_by: string | null
@@ -618,7 +618,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          client_id?: string | null
+          client_id: string
           contract_price?: number
           created_at?: string
           created_by?: string | null
@@ -635,7 +635,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
-          client_id?: string | null
+          client_id?: string
           contract_price?: number
           created_at?: string
           created_by?: string | null
