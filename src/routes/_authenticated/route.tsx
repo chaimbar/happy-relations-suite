@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 const ROUTE_TITLES: Record<string, string> = {
-  "/": "דשבורד",
+  "/": "דשבורט טסט",
   "/employees": "עובדים",
   "/clients": "לקוחות",
   "/projects": "אתרים",
