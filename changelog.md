@@ -44,3 +44,5 @@
 - 2026-06-10: מסך היסטוריית פעולות (/activity-log, מנהלים) + שיוך עובד למנהל צוות (managed_by, אדמין) + migration לתיחום ישיר ותיקון מדיניות audit_logs. commit c4cad5d.
 - 2026-06-25 — תיקון: כפתורי עריכה/מחיקה בכרטיס לקוח גלויים תמיד (לא רק ב-hover); תיקון אבטחה: views client_balance + site_profitability עם security_invoker.
 - 2026-06-25: fix(sites) client_id NOT NULL + שדה לקוח חובה בטופס
+
+- 2026-06-28 — כותרת דשבורד: "דשבורט טסט" → "דשבורד" (הסרת מילת טסט)

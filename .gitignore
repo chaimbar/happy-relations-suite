@@ -20,6 +20,10 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Local-only server adapter / lockfile (not part of the Lovable app)
+server-node.mjs
+package-lock.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

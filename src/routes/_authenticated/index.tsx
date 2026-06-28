@@ -170,7 +170,7 @@ function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="font-display text-2xl font-bold">דשבורט טסט</h2>
+        <h2 className="font-display text-2xl font-bold">דשבורד</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {format(new Date(), "EEEE, d MMMM yyyy", { locale: he })}
         </p>

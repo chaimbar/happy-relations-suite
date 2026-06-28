@@ -42,3 +42,5 @@
 - 2026-06-10: migration team_scoping_direct_and_audit_policy_fix הוחל על Supabase פרודקשן באישור חיים. advisors: אין ממצאים חדשים.
 - 2026-06-25 — תיקון לקוחות: opacity-0→גלוי. Views→security_invoker.
 - 2026-06-25: תיקון שמירת אתר — schema cache + לקוח חובה
+
+- 2026-06-28 — תיקון כותרת דשבורד, הסרת "טסט"
