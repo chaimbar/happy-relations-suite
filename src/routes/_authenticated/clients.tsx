@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Phone, Mail, Search, Users, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Phone, Mail, Search, Users, Download, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -33,6 +33,7 @@ type Client = {
   id: string;
   full_name: string;
   phone: string | null;
+  phone2: string | null;
   email: string | null;
   notes: string | null;
 };
@@ -138,7 +139,7 @@ function ClientsPage() {
   });
 
   const filtered = clients.filter((c) =>
-    [c.full_name, c.phone, c.email].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
+    [c.full_name, c.phone, c.phone2, c.email].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const isFiltering = search.trim().length > 0;
@@ -146,12 +147,13 @@ function ClientsPage() {
   const handleExport = () =>
     exportToCsv(
       `לקוחות-${format(new Date(), "yyyy-MM-dd")}.csv`,
-      ["שם", "טלפון", "אימייל", "סך חויב", "סך שולם", "יתרה", "מס' אתרים", "הערות"],
+      ["שם", "טלפון", "טלפון 2 / וואטסאפ", "אימייל", "סך חויב", "סך שולם", "יתרה", "מס' אתרים", "הערות"],
       filtered.map((c) => {
         const b = balanceMap.get(c.id);
         return [
           c.full_name,
           c.phone,
+          c.phone2,
           c.email,
           b ? Number(b.total_invoiced) : 0,
           b ? Number(b.total_paid) : 0,
@@ -296,7 +298,7 @@ function ClientCard({
   onDelete: () => void;
   isDeleting: boolean;
 }) {
-  const hasContact = c.phone || c.email;
+  const hasContact = c.phone || c.phone2 || c.email;
   const avatarColor = getAvatarColor(c.full_name);
   const hasFinancials = bal && (Number(bal.total_invoiced) > 0 || Number(bal.total_sites) > 0);
 
@@ -384,6 +386,18 @@ function ClientCard({
                 <span>{c.phone}</span>
               </a>
             )}
+            {c.phone2 && (
+              <a
+                href={`https://wa.me/${c.phone2.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-foreground transition-colors w-fit"
+                dir="ltr"
+              >
+                <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>{c.phone2}</span>
+              </a>
+            )}
             {c.email && (
               <a
                 href={`mailto:${c.email}`}
@@ -433,6 +447,7 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
   const [form, setForm] = useState({
     full_name: editing?.full_name ?? "",
     phone: editing?.phone ?? "",
+    phone2: editing?.phone2 ?? "",
     email: editing?.email ?? "",
     notes: editing?.notes ?? "",
   });
@@ -444,11 +459,12 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
       setForm({
         full_name: editing.full_name ?? "",
         phone: editing.phone ?? "",
+        phone2: editing.phone2 ?? "",
         email: editing.email ?? "",
         notes: editing.notes ?? "",
       });
     } else {
-      setForm({ full_name: "", phone: "", email: "", notes: "" });
+      setForm({ full_name: "", phone: "", phone2: "", email: "", notes: "" });
     }
     setErrors({});
   }, [editing]);
@@ -467,6 +483,7 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
       const payload = {
         full_name: form.full_name.trim(),
         phone: form.phone.trim() || null,
+        phone2: form.phone2.trim() || null,
         email: form.email.trim() || null,
         notes: form.notes.trim() || null,
       };
@@ -540,6 +557,18 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
             />
             {errors.email && <p id="email-error" className="text-xs text-destructive col-span-2">{errors.email}</p>}
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="client-phone2">טלפון 2 / וואטסאפ</Label>
+          <Input
+            id="client-phone2"
+            dir="ltr"
+            type="tel"
+            placeholder="050-0000000"
+            value={form.phone2}
+            onChange={(e) => setForm({ ...form, phone2: e.target.value })}
+          />
         </div>
 
         <div className="space-y-1.5">
