@@ -206,7 +206,7 @@ function ClientsPage() {
                     <span className="sm:hidden">חדש</span>
                   </Button>
                 </DialogTrigger>
-                <ClientDialog editing={editing} onClose={() => { setDialogOpen(false); setEditing(null); }} />
+                <ClientDialog key={editing?.id ?? "new"} editing={editing} onClose={() => { setDialogOpen(false); setEditing(null); }} />
               </Dialog>
             )}
           </div>
