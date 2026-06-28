@@ -15,6 +15,22 @@
 - **ריפו GitHub:** https://github.com/chaimbar/happy-relations-suite (Private)
 - **Lovable:** https://lovable.dev/projects/1fa0979b-c623-4313-8f44-f26086c9d604
 - **ענף עיקרי:** `main`
+- **תיקיית עבודה בשרת:** `/srv/projects/workforce-crm` (גישה דרך VS Code Remote-SSH ל-`dona-server`)
+
+---
+
+## ארכיטקטורה — מסדי נתונים ופריסה (חשוב!)
+
+**זרימת פריסה (קוד):** עורכים כאן → `git commit` → `git push origin main` → **Lovable בונה ופורס אוטומטית** לאתר החי `himelech.crmbizflow.online` (~1-2 דק'). השרת הזה מריץ רק עותק dev מקומי (PM2 `workforce-crm`, פורט 4600) — הוא **לא** מארח את האתר הציבורי.
+
+**שני מסדי נתונים (Supabase):**
+- 🟢 **חי (פרודקשן):** פרויקט `hozkrgoxtkcwnzsjnpuj` — מנוהל ע"י **Lovable Cloud**, נגיש **רק** דרך Lovable → Cloud → **SQL editor** (אין connection string חיצוני, ה-service_role לא חשוף). ⚠️ קובץ `.env` שב-repo מצביע על DB ישן (`goyxe...`) והוא **מטעה** — Lovable מזריק env משלו. אל תסתמך על `.env`.
+- 🔵 **גיבוי:** פרויקט `goyxefoioaphbomplsmq` (Supabase של המשתמש, חשבון eli) — מקבל **גיבוי יומי אוטומטי ב-03:00** מה-DB החי דרך `pg_cron`+`dblink` (פונקציה `backup_to_goyxe()` שהוגדרה ב-SQL editor).
+
+**איפה עושים מה:**
+- שינוי **קוד/עיצוב** → כאן (VS Code/Claude Code) → push → Lovable.
+- שינוי **סכמת DB** → דרך Lovable (SQL editor או בקשה ל-Lovable). לא מהקבצים כאן.
+- **סודות** (סיסמאות DB, tokens) → ב-`/srv/backups/workforce-crm/` (מחוץ ל-repo) וב-`~/.git-credentials`. **לעולם לא** לחייב `.env` או סודות ל-git.
 
 ---
 
