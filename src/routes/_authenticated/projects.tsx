@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus, Pencil, Trash2, MapPin, Search, Calendar as CalIcon, Building2,
   ChevronDown, ChevronUp, CheckCircle2, Circle, Clock, DollarSign,
@@ -560,6 +560,16 @@ function StageDialog({
     notes: editing?.notes ?? "",
   });
 
+  // Sync form whenever the editing target changes (mirrors EmployeeDialog fix)
+  useEffect(() => {
+    setForm({
+      name: editing?.name ?? "",
+      payment_amount: editing?.payment_amount != null ? editing.payment_amount.toString() : "",
+      status: (editing?.status ?? "pending") as Stage["status"],
+      notes: editing?.notes ?? "",
+    });
+  }, [editing]);
+
   const saveM = useMutation({
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
@@ -673,6 +683,21 @@ function ProjectDialog({
     status: editing?.status ?? "active",
     notes: editing?.notes ?? "",
   });
+
+  // Sync form whenever the editing target changes (mirrors EmployeeDialog fix)
+  useEffect(() => {
+    setForm({
+      name: editing?.name ?? "",
+      client_id: editing?.client_id ?? "",
+      address: editing?.address ?? "",
+      start_date: editing?.start_date ?? "",
+      end_date: editing?.end_date ?? "",
+      contract_price: editing?.contract_price != null ? editing.contract_price.toString() : "",
+      materials_cost: editing?.materials_cost != null ? editing.materials_cost.toString() : "",
+      status: editing?.status ?? "active",
+      notes: editing?.notes ?? "",
+    });
+  }, [editing]);
 
   const saveM = useMutation({
     mutationFn: async () => {
