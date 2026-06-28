@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Phone, Mail, Search, Users, Download } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -206,7 +206,7 @@ function ClientsPage() {
                     <span className="sm:hidden">חדש</span>
                   </Button>
                 </DialogTrigger>
-                <ClientDialog key={editing?.id ?? "new"} editing={editing} onClose={() => { setDialogOpen(false); setEditing(null); }} />
+                <ClientDialog editing={editing} onClose={() => { setDialogOpen(false); setEditing(null); }} />
               </Dialog>
             )}
           </div>
@@ -437,6 +437,21 @@ function ClientDialog({ editing, onClose }: { editing: Client | null; onClose: (
     notes: editing?.notes ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Sync form whenever the editing target changes (mirrors EmployeeDialog fix)
+  useEffect(() => {
+    if (editing) {
+      setForm({
+        full_name: editing.full_name ?? "",
+        phone: editing.phone ?? "",
+        email: editing.email ?? "",
+        notes: editing.notes ?? "",
+      });
+    } else {
+      setForm({ full_name: "", phone: "", email: "", notes: "" });
+    }
+    setErrors({});
+  }, [editing]);
 
   const validate = () => {
     const next: Record<string, string> = {};
