@@ -880,10 +880,11 @@ function EmployeeView({ assignments, employees, days, isManager, onDelete, onAdd
 // ─── Add Assignment Dialog (GAP-026: double detection) ────────────────────────
 
 function AddAssignmentDialog({
-  open, defaultDate, employees, sites, existingAssignments, onClose, onSuccess,
+  open, defaultDate, defaultEmployeeId, employees, sites, existingAssignments, onClose, onSuccess,
 }: {
   open: boolean;
   defaultDate?: string;
+  defaultEmployeeId?: string;
   employees: Employee[];
   sites: Site[];
   existingAssignments: Assignment[];
@@ -891,7 +892,7 @@ function AddAssignmentDialog({
   onSuccess: () => void;
 }) {
   const [form, setForm] = useState({
-    employee_id: "",
+    employee_id: defaultEmployeeId ?? "",
     site_id: "",
     date: defaultDate ?? format(new Date(), "yyyy-MM-dd"),
     shift_type: "full" as "full" | "morning" | "afternoon",
@@ -903,13 +904,13 @@ function AddAssignmentDialog({
       setForm((prev) => ({
         ...prev,
         date: defaultDate ?? format(new Date(), "yyyy-MM-dd"),
-        employee_id: "",
+        employee_id: defaultEmployeeId ?? "",
         site_id: "",
         notes: "",
         shift_type: "full",
       }));
     }
-  }, [open, defaultDate]);
+  }, [open, defaultDate, defaultEmployeeId]);
 
   const isDuplicate = !!(
     form.employee_id &&
