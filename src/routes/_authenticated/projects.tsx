@@ -115,6 +115,8 @@ function ProjectsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set());
+  const [expandedAdditions, setExpandedAdditions] = useState<Set<string>>(new Set());
+
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
