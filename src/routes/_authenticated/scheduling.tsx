@@ -1080,6 +1080,7 @@ function HistoryView({
             <SelectItem value="30">30 ימים אחרונים</SelectItem>
             <SelectItem value="90">90 ימים אחרונים</SelectItem>
             <SelectItem value="365">שנה אחרונה</SelectItem>
+            <SelectItem value="all">הכל</SelectItem>
           </SelectContent>
         </Select>
         <Badge variant="outline">{data.length} שיבוצים</Badge>
