@@ -1045,9 +1045,11 @@ function HistoryView({
   isManager: boolean;
   onDelete: (id: string) => void;
 }) {
-  const [range, setRange] = useState<"30" | "90" | "365">("90");
-  const from = format(addDays(new Date(), -Number(range)), "yyyy-MM-dd");
-  const to = format(addDays(new Date(), -1), "yyyy-MM-dd");
+  const [range, setRange] = useState<"30" | "90" | "365" | "all">("all");
+  const from = range === "all"
+    ? "1970-01-01"
+    : format(addDays(new Date(), -Number(range)), "yyyy-MM-dd");
+  const to = format(new Date(), "yyyy-MM-dd");
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["assignments-history", from, to],
@@ -1078,6 +1080,7 @@ function HistoryView({
             <SelectItem value="30">30 ימים אחרונים</SelectItem>
             <SelectItem value="90">90 ימים אחרונים</SelectItem>
             <SelectItem value="365">שנה אחרונה</SelectItem>
+            <SelectItem value="all">הכל</SelectItem>
           </SelectContent>
         </Select>
         <Badge variant="outline">{data.length} שיבוצים</Badge>
