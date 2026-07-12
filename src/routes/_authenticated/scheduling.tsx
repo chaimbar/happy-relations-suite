@@ -562,10 +562,18 @@ function WeeklyView({ assignments, employees, days, isManager, onDelete, onMove,
               />
             ))}
 
-            {isDragTarget && dayAssignments.length === 0 && (
-              <div className="text-[11px] text-blue-400 text-center py-3 border-2 border-dashed border-blue-300 rounded-lg flex-1">
-                שחרר כאן
-              </div>
+            {dayAssignments.length === 0 && isManager && (
+              <button
+                type="button"
+                onClick={() => onAdd(dateStr)}
+                className={`mt-auto rounded-lg border-2 border-dashed py-3 text-[11px] font-semibold transition-colors ${
+                  isDragTarget
+                    ? "border-blue-300 bg-blue-50 text-blue-500"
+                    : "border-border/70 text-muted-foreground hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+                }`}
+              >
+                {isDragTarget ? "שחרר כאן" : "+ שיבוץ"}
+              </button>
             )}
           </div>
         );
