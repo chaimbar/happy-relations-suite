@@ -196,6 +196,13 @@ function ProjectsPage() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  const toggleAdditions = (id: string) =>
+    setExpandedAdditions((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+
 
   return (
     <div className="space-y-5">
