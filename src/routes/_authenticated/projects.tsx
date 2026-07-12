@@ -318,12 +318,16 @@ function ProjectsPage() {
         <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
           {filtered.map((p) => {
             const status = STATUS_LABEL[p.status];
-            const profitEstimate = Number(p.contract_price) - Number(p.materials_cost);
+            const additions = additionsBySite.get(p.id) ?? [];
+            const additionsTotal = additions.reduce((s, a) => s + Number(a.amount ?? 0), 0);
+            const profitEstimate = Number(p.contract_price) + additionsTotal - Number(p.materials_cost);
             const stages = stagesBySite.get(p.id) ?? [];
             const stagesExpanded = expandedStages.has(p.id);
+            const additionsExpanded = expandedAdditions.has(p.id);
             const completedStages = stages.filter((s) => s.status === "completed").length;
             const paidInStages = stages.reduce((s, st) =>
               st.status === "completed" ? s + Number(st.payment_amount ?? 0) : s, 0);
+
 
             return (
               <Card key={p.id} className="hover:shadow-md transition-shadow">
