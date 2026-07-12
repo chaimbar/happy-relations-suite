@@ -391,10 +391,16 @@ function ProjectsPage() {
                   </div>
 
                   {/* Financials */}
-                  <div className="mt-4 pt-3 border-t grid grid-cols-3 gap-2 text-sm">
+                  <div className="mt-4 pt-3 border-t grid grid-cols-4 gap-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-0.5">הכנסה</p>
+                      <p className="text-xs text-muted-foreground mb-0.5">חוזה</p>
                       <p className="font-semibold">{fmt(p.contract_price)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">תוספות</p>
+                      <p className={`font-semibold ${additionsTotal > 0 ? "text-blue-600" : ""}`}>
+                        {additionsTotal > 0 ? `+${fmt(additionsTotal)}` : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">חומרים</p>
@@ -407,6 +413,7 @@ function ProjectsPage() {
                       </p>
                     </div>
                   </div>
+
 
                   {/* Stages section */}
                   <div className="mt-3 pt-3 border-t">
