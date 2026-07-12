@@ -83,10 +83,10 @@ function SchedulingPage() {
   const { isManager } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
-  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee" | "history">("weekly");
+  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee" | "history">("daily");
   const [bulkOpen, setBulkOpen] = useState(false);
 
-  const [addDialog, setAddDialog] = useState<{ open: boolean; date?: string }>({ open: false });
+  const [addDialog, setAddDialog] = useState<{ open: boolean; date?: string; employeeId?: string }>({ open: false });
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterSite, setFilterSite] = useState("all");
 
@@ -214,6 +214,7 @@ function SchedulingPage() {
     onDelete: (id: string) => deleteM.mutate(id),
     onMove: (id: string, newDate: string) => moveM.mutate({ id, newDate }),
     onAdd: (date?: string) => setAddDialog({ open: true, date }),
+    onAddEmployee: (employeeId: string, date?: string) => setAddDialog({ open: true, date, employeeId }),
     onCreate: (employeeId: string, siteId: string, date: string) =>
       createFromDragM.mutate({ employeeId, siteId, date }),
     colorOf,
@@ -372,9 +373,16 @@ function SchedulingPage() {
               {unassignedToday.map((e) => {
                 const c = colorOf(e.id);
                 return (
-                  <Badge key={e.id} variant="outline" className={`text-xs ${c.text} ${c.border}`}>
-                    {e.full_name}
-                  </Badge>
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => isManager && setAddDialog({ open: true, date: format(new Date(), "yyyy-MM-dd"), employeeId: e.id })}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${c.text} ${c.border} ${isManager ? "hover:bg-orange-50 cursor-pointer" : "cursor-default"}`}
+                      disabled={!isManager}
+                    >
+                      {e.full_name}
+                      {isManager && <Plus className="h-3 w-3" />}
+                    </button>
                 );
               })}
             </div>
@@ -385,6 +393,7 @@ function SchedulingPage() {
       <AddAssignmentDialog
         open={addDialog.open}
         defaultDate={addDialog.date}
+        defaultEmployeeId={addDialog.employeeId}
         employees={employees}
         sites={sites}
         existingAssignments={assignments}
@@ -553,10 +562,18 @@ function WeeklyView({ assignments, employees, days, isManager, onDelete, onMove,
               />
             ))}
 
-            {isDragTarget && dayAssignments.length === 0 && (
-              <div className="text-[11px] text-blue-400 text-center py-3 border-2 border-dashed border-blue-300 rounded-lg flex-1">
-                שחרר כאן
-              </div>
+            {dayAssignments.length === 0 && isManager && (
+              <button
+                type="button"
+                onClick={() => onAdd(dateStr)}
+                className={`mt-auto rounded-lg border-2 border-dashed py-3 text-[11px] font-semibold transition-colors ${
+                  isDragTarget
+                    ? "border-blue-300 bg-blue-50 text-blue-500"
+                    : "border-border/70 text-muted-foreground hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+                }`}
+              >
+                {isDragTarget ? "שחרר כאן" : "+ שיבוץ"}
+              </button>
             )}
           </div>
         );
@@ -871,10 +888,11 @@ function EmployeeView({ assignments, employees, days, isManager, onDelete, onAdd
 // ─── Add Assignment Dialog (GAP-026: double detection) ────────────────────────
 
 function AddAssignmentDialog({
-  open, defaultDate, employees, sites, existingAssignments, onClose, onSuccess,
+  open, defaultDate, defaultEmployeeId, employees, sites, existingAssignments, onClose, onSuccess,
 }: {
   open: boolean;
   defaultDate?: string;
+  defaultEmployeeId?: string;
   employees: Employee[];
   sites: Site[];
   existingAssignments: Assignment[];
@@ -882,7 +900,7 @@ function AddAssignmentDialog({
   onSuccess: () => void;
 }) {
   const [form, setForm] = useState({
-    employee_id: "",
+    employee_id: defaultEmployeeId ?? "",
     site_id: "",
     date: defaultDate ?? format(new Date(), "yyyy-MM-dd"),
     shift_type: "full" as "full" | "morning" | "afternoon",
@@ -894,13 +912,13 @@ function AddAssignmentDialog({
       setForm((prev) => ({
         ...prev,
         date: defaultDate ?? format(new Date(), "yyyy-MM-dd"),
-        employee_id: "",
+        employee_id: defaultEmployeeId ?? "",
         site_id: "",
         notes: "",
         shift_type: "full",
       }));
     }
-  }, [open, defaultDate]);
+  }, [open, defaultDate, defaultEmployeeId]);
 
   const isDuplicate = !!(
     form.employee_id &&
