@@ -83,10 +83,10 @@ function SchedulingPage() {
   const { isManager } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
-  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee" | "history">("weekly");
+  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee" | "history">("daily");
   const [bulkOpen, setBulkOpen] = useState(false);
 
-  const [addDialog, setAddDialog] = useState<{ open: boolean; date?: string }>({ open: false });
+  const [addDialog, setAddDialog] = useState<{ open: boolean; date?: string; employeeId?: string }>({ open: false });
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterSite, setFilterSite] = useState("all");
 
@@ -214,6 +214,7 @@ function SchedulingPage() {
     onDelete: (id: string) => deleteM.mutate(id),
     onMove: (id: string, newDate: string) => moveM.mutate({ id, newDate }),
     onAdd: (date?: string) => setAddDialog({ open: true, date }),
+    onAddEmployee: (employeeId: string, date?: string) => setAddDialog({ open: true, date, employeeId }),
     onCreate: (employeeId: string, siteId: string, date: string) =>
       createFromDragM.mutate({ employeeId, siteId, date }),
     colorOf,
@@ -372,9 +373,16 @@ function SchedulingPage() {
               {unassignedToday.map((e) => {
                 const c = colorOf(e.id);
                 return (
-                  <Badge key={e.id} variant="outline" className={`text-xs ${c.text} ${c.border}`}>
-                    {e.full_name}
-                  </Badge>
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => isManager && setAddDialog({ open: true, date: format(new Date(), "yyyy-MM-dd"), employeeId: e.id })}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${c.text} ${c.border} ${isManager ? "hover:bg-orange-50 cursor-pointer" : "cursor-default"}`}
+                      disabled={!isManager}
+                    >
+                      {e.full_name}
+                      {isManager && <Plus className="h-3 w-3" />}
+                    </button>
                 );
               })}
             </div>
@@ -385,6 +393,7 @@ function SchedulingPage() {
       <AddAssignmentDialog
         open={addDialog.open}
         defaultDate={addDialog.date}
+        defaultEmployeeId={addDialog.employeeId}
         employees={employees}
         sites={sites}
         existingAssignments={assignments}
