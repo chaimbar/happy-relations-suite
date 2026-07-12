@@ -273,10 +273,16 @@ function SchedulingPage() {
             </SelectContent>
           </Select>
           {isManager && (
-            <Button size="sm" onClick={() => setAddDialog({ open: true })}>
-              <Plus className="h-4 w-4 ml-1" /> שיבוץ חדש
-            </Button>
+            <>
+              <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
+                <Users className="h-4 w-4 ml-1" /> שבץ את כולם
+              </Button>
+              <Button size="sm" onClick={() => setAddDialog({ open: true })}>
+                <Plus className="h-4 w-4 ml-1" /> שיבוץ חדש
+              </Button>
+            </>
           )}
+
         </div>
       </div>
 
