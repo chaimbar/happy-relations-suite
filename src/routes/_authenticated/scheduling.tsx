@@ -341,6 +341,7 @@ function SchedulingPage() {
           <TabsTrigger value="daily">יומי</TabsTrigger>
           <TabsTrigger value="bysite">לפי אתר</TabsTrigger>
           <TabsTrigger value="byemployee">לפי עובד</TabsTrigger>
+          <TabsTrigger value="history">היסטוריה</TabsTrigger>
         </TabsList>
 
         <TabsContent value="weekly" className="mt-0">
@@ -354,6 +355,9 @@ function SchedulingPage() {
         </TabsContent>
         <TabsContent value="byemployee" className="mt-0">
           <EmployeeView {...sharedProps} />
+        </TabsContent>
+        <TabsContent value="history" className="mt-0">
+          <HistoryView colorOf={colorOf} isManager={isManager} onDelete={(id) => deleteM.mutate(id)} />
         </TabsContent>
       </Tabs>
 
@@ -387,6 +391,16 @@ function SchedulingPage() {
         onClose={() => setAddDialog({ open: false })}
         onSuccess={invalidateAll}
       />
+
+      <BulkAssignDialog
+        open={bulkOpen}
+        employees={employees}
+        sites={sites}
+        existingAssignments={assignments}
+        onClose={() => setBulkOpen(false)}
+        onSuccess={invalidateAll}
+      />
+
     </div>
   );
 }
