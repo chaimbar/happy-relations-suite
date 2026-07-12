@@ -83,7 +83,9 @@ function SchedulingPage() {
   const { isManager } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
-  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee">("weekly");
+  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee" | "history">("weekly");
+  const [bulkOpen, setBulkOpen] = useState(false);
+
   const [addDialog, setAddDialog] = useState<{ open: boolean; date?: string }>({ open: false });
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterSite, setFilterSite] = useState("all");
