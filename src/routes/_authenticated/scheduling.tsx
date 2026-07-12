@@ -1017,3 +1017,206 @@ function AddAssignmentDialog({
     </Dialog>
   );
 }
+
+// ─── History View ──────────────────────────────────────────────────────────
+
+function HistoryView({
+  colorOf, isManager, onDelete,
+}: {
+  colorOf: (id: string) => ColorSwatch;
+  isManager: boolean;
+  onDelete: (id: string) => void;
+}) {
+  const [range, setRange] = useState<"30" | "90" | "365">("90");
+  const from = format(addDays(new Date(), -Number(range)), "yyyy-MM-dd");
+  const to = format(addDays(new Date(), -1), "yyyy-MM-dd");
+
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["assignments-history", from, to],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assignments")
+        .select("*, employees(full_name), sites(name)")
+        .gte("date", from)
+        .lte("date", to)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data as Assignment[];
+    },
+  });
+
+  const byDate: Record<string, Assignment[]> = {};
+  for (const a of data) {
+    (byDate[a.date] ||= []).push(a);
+  }
+  const dates = Object.keys(byDate).sort((a, b) => (a < b ? 1 : -1));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Select value={range} onValueChange={(v) => setRange(v as typeof range)}>
+          <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="30">30 ימים אחרונים</SelectItem>
+            <SelectItem value="90">90 ימים אחרונים</SelectItem>
+            <SelectItem value="365">שנה אחרונה</SelectItem>
+          </SelectContent>
+        </Select>
+        <Badge variant="outline">{data.length} שיבוצים</Badge>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground text-center py-6">טוען...</p>
+      ) : dates.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground">
+          <Calendar className="h-8 w-8 mx-auto mb-3 opacity-30" />
+          <p>אין שיבוצים היסטוריים בטווח הזה</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {dates.map((d) => (
+            <Card key={d}>
+              <CardHeader className="py-2 px-4">
+                <CardTitle className="text-sm">
+                  {format(new Date(d), "EEEE, d MMMM yyyy", { locale: he })}
+                  <Badge variant="secondary" className="mr-2 text-xs">{byDate[d].length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                {byDate[d].map((a) => (
+                  <AssignmentCard
+                    key={a.id}
+                    a={a}
+                    isManager={isManager}
+                    onDelete={onDelete}
+                    color={colorOf(a.employee_id)}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Bulk Assign Dialog ────────────────────────────────────────────────────
+
+function BulkAssignDialog({
+  open, employees, sites, existingAssignments, onClose, onSuccess,
+}: {
+  open: boolean;
+  employees: Employee[];
+  sites: Site[];
+  existingAssignments: Assignment[];
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [siteId, setSiteId] = useState("");
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [shift, setShift] = useState<"full" | "morning" | "afternoon">("full");
+  const [skipAssigned, setSkipAssigned] = useState(true);
+
+  useEffect(() => {
+    if (open) {
+      setSiteId("");
+      setDate(format(new Date(), "yyyy-MM-dd"));
+      setShift("full");
+      setSkipAssigned(true);
+    }
+  }, [open]);
+
+  const targetIds = employees
+    .filter((e) => !skipAssigned || !existingAssignments.some((a) => a.employee_id === e.id && a.date === date))
+    .map((e) => e.id);
+
+  const alreadyCount = employees.length - targetIds.length;
+
+  const saveM = useMutation({
+    mutationFn: async () => {
+      if (!siteId) throw new Error("בחר אתר");
+      if (targetIds.length === 0) throw new Error("אין עובדים לשבץ");
+      const { data: u } = await supabase.auth.getUser();
+      const rows = targetIds.map((eid) => {
+        const emp = employees.find((e) => e.id === eid);
+        return {
+          employee_id: eid,
+          site_id: siteId,
+          date,
+          shift_type: shift,
+          cost_estimated: emp?.daily_cost_estimated ?? 0,
+          user_id: u.user!.id,
+        };
+      });
+      const { error } = await supabase.from("assignments").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`שובצו ${targetIds.length} עובדים`);
+      onSuccess();
+      onClose();
+    },
+    onError: (e: Error) => toast.error("שגיאה", { description: e.message }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>שבץ את כל העובדים</DialogTitle>
+          <DialogDescription>שיבוץ קבוצתי של כל העובדים הפעילים לאתר בתאריך אחד</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={(e) => { e.preventDefault(); saveM.mutate(); }} className="space-y-4">
+          <div className="space-y-2">
+            <Label>אתר *</Label>
+            <Select value={siteId} onValueChange={setSiteId}>
+              <SelectTrigger><SelectValue placeholder="בחר אתר" /></SelectTrigger>
+              <SelectContent>
+                {sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>תאריך *</Label>
+            <input
+              type="date" required value={date} onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>סוג משמרת</Label>
+            <Select value={shift} onValueChange={(v) => setShift(v as typeof shift)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full">מלאה</SelectItem>
+                <SelectItem value="morning">בוקר</SelectItem>
+                <SelectItem value="afternoon">אחה"צ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox" checked={skipAssigned}
+              onChange={(e) => setSkipAssigned(e.target.checked)}
+            />
+            דלג על עובדים שכבר משובצים היום
+          </label>
+          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+            <div className="font-semibold text-blue-800">ישובצו: {targetIds.length} עובדים</div>
+            {alreadyCount > 0 && (
+              <div className="text-xs text-blue-600 mt-0.5">{alreadyCount} כבר משובצים ויידלגו</div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>ביטול</Button>
+            <Button type="submit" disabled={saveM.isPending || !siteId || targetIds.length === 0}>
+              {saveM.isPending ? "משבץ..." : `שבץ ${targetIds.length}`}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
