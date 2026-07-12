@@ -55,6 +55,23 @@ type Stage = {
   sort_order: number | null;
 };
 
+type Addition = {
+  id: string;
+  site_id: string;
+  description: string;
+  amount: number;
+  date: string;
+  status: "pending" | "approved" | "billed";
+  notes: string | null;
+};
+
+const ADDITION_STATUS: Record<Addition["status"], { label: string; color: string }> = {
+  pending:  { label: "ממתין",  color: "text-amber-600" },
+  approved: { label: "אושר",   color: "text-blue-600" },
+  billed:   { label: "חויב",   color: "text-green-600" },
+};
+
+
 type ClientLite = { id: string; full_name: string };
 
 const STATUS_LABEL: Record<Project["status"], { label: string; variant: "default" | "secondary" | "outline" }> = {
