@@ -1045,9 +1045,11 @@ function HistoryView({
   isManager: boolean;
   onDelete: (id: string) => void;
 }) {
-  const [range, setRange] = useState<"30" | "90" | "365">("90");
-  const from = format(addDays(new Date(), -Number(range)), "yyyy-MM-dd");
-  const to = format(addDays(new Date(), -1), "yyyy-MM-dd");
+  const [range, setRange] = useState<"30" | "90" | "365" | "all">("all");
+  const from = range === "all"
+    ? "1970-01-01"
+    : format(addDays(new Date(), -Number(range)), "yyyy-MM-dd");
+  const to = format(new Date(), "yyyy-MM-dd");
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["assignments-history", from, to],
