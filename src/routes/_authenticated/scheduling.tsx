@@ -163,6 +163,28 @@ function SchedulingPage() {
     onError: (e: Error) => toast.error("שגיאה בהזזה", { description: e.message }),
   });
 
+  const createFromDragM = useMutation({
+    mutationFn: async ({ employeeId, siteId, date }: { employeeId: string; siteId: string; date: string }) => {
+      const emp = employees.find((e) => e.id === employeeId);
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from("assignments").insert({
+        employee_id: employeeId,
+        site_id: siteId,
+        date,
+        shift_type: "full",
+        cost_estimated: emp?.daily_cost_estimated ?? 0,
+        user_id: u.user!.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("שיבוץ נוסף");
+      qc.invalidateQueries({ queryKey: ["assignments"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+    onError: (e: Error) => toast.error("שגיאה בשיבוץ", { description: e.message }),
+  });
+
   const filtered = assignments.filter((a) => {
     if (filterEmployee !== "all" && a.employee_id !== filterEmployee) return false;
     if (filterSite !== "all" && a.site_id !== filterSite) return false;
@@ -192,8 +214,11 @@ function SchedulingPage() {
     onDelete: (id: string) => deleteM.mutate(id),
     onMove: (id: string, newDate: string) => moveM.mutate({ id, newDate }),
     onAdd: (date?: string) => setAddDialog({ open: true, date }),
+    onCreate: (employeeId: string, siteId: string, date: string) =>
+      createFromDragM.mutate({ employeeId, siteId, date }),
     colorOf,
   };
+
 
   return (
     <div className="space-y-5">
