@@ -569,21 +569,75 @@ function WeeklyView({ assignments, employees, days, isManager, onDelete, onMove,
 // ─── Daily View (GAP-009) ─────────────────────────────────────────────────────
 
 function DailyView({
-  assignments, employees, sites, isManager, onDelete, onAdd, onMove, colorOf, selectedDay, onDayChange,
+  assignments, employees, sites, isManager, onDelete, onAdd, onMove, onCreate, colorOf, selectedDay, onDayChange,
 }: SharedViewProps & { selectedDay: Date; onDayChange: (d: Date) => void }) {
   const dateStr = format(selectedDay, "yyyy-MM-dd");
   const isToday = isSameDay(selectedDay, new Date());
   const dayAssignments = assignments.filter((a) => a.date === dateStr);
+
+  const [dragEmpId, setDragEmpId] = useState<string | null>(null);
+  const [dropSiteId, setDropSiteId] = useState<string | null>(null);
 
   const bySite: Record<string, Assignment[]> = {};
   for (const a of dayAssignments) {
     if (!bySite[a.site_id]) bySite[a.site_id] = [];
     bySite[a.site_id].push(a);
   }
-  const activeSites = sites.filter((s) => (bySite[s.id]?.length ?? 0) > 0);
+  // All active sites (not only those with existing assignments) to allow dropping onto empty sites too
+  const displaySites = sites.filter((s) => (bySite[s.id]?.length ?? 0) > 0);
+  const emptySites = sites.filter((s) => !(bySite[s.id]?.length));
 
   const assignedIds = new Set(dayAssignments.map((a) => a.employee_id));
   const unassigned = employees.filter((e) => !assignedIds.has(e.id));
+
+  const handleDropOnSite = (siteId: string) => {
+    if (!dragEmpId) return;
+    // don't duplicate
+    if (dayAssignments.some((a) => a.employee_id === dragEmpId && a.site_id === siteId)) {
+      toast.info("העובד כבר משובץ באתר הזה היום");
+    } else {
+      onCreate(dragEmpId, siteId, dateStr);
+    }
+    setDragEmpId(null);
+    setDropSiteId(null);
+  };
+
+  const siteCard = (s: Site, hasAssignments: boolean) => {
+    const isDropTarget = dropSiteId === s.id;
+    return (
+      <Card
+        key={s.id}
+        onDragOver={(e) => { if (dragEmpId) { e.preventDefault(); setDropSiteId(s.id); } }}
+        onDragLeave={() => setDropSiteId(null)}
+        onDrop={() => handleDropOnSite(s.id)}
+        className={isDropTarget ? "border-blue-400 ring-2 ring-blue-200 bg-blue-50/50" : ""}
+      >
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-emerald-500" />
+            {s.name}
+            <Badge variant="secondary" className="text-xs mr-auto">{bySite[s.id]?.length ?? 0}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-2">
+          {(bySite[s.id] ?? []).map((a) => (
+            <AssignmentCard
+              key={a.id}
+              a={a}
+              isManager={isManager}
+              onDelete={onDelete}
+              color={colorOf(a.employee_id)}
+            />
+          ))}
+          {!hasAssignments && (
+            <div className="text-[11px] text-muted-foreground text-center py-3 border-2 border-dashed border-border/60 rounded-lg">
+              {dragEmpId ? "שחרר כאן לשיבוץ" : "גרור עובד לכאן"}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -603,55 +657,30 @@ function DailyView({
 
       <div className="flex items-center gap-3 flex-wrap">
         <Badge variant="outline">{dayAssignments.length} שיבוצים</Badge>
-        <Badge variant="outline">{activeSites.length} אתרים</Badge>
+        <Badge variant="outline">{displaySites.length} אתרים</Badge>
         {isManager && (
           <Button size="sm" onClick={() => onAdd(dateStr)}>
             <Plus className="h-4 w-4 ml-1" /> הוסף שיבוץ
           </Button>
         )}
+        {isManager && (
+          <span className="text-xs text-muted-foreground">
+            💡 גרור עובד מ"ללא שיבוץ" לכרטיס אתר
+          </span>
+        )}
       </div>
 
-      {dayAssignments.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          <Calendar className="h-8 w-8 mx-auto mb-3 opacity-30" />
-          <p>אין שיבוצים ליום זה</p>
-          {isManager && (
-            <Button variant="outline" size="sm" className="mt-3" onClick={() => onAdd(dateStr)}>
-              הוסף שיבוץ ראשון
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {activeSites.map((s) => (
-            <Card key={s.id}>
-              <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-emerald-500" />
-                  {s.name}
-                  <Badge variant="secondary" className="text-xs mr-auto">{bySite[s.id].length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-2">
-                {bySite[s.id].map((a) => (
-                  <AssignmentCard
-                    key={a.id}
-                    a={a}
-                    isManager={isManager}
-                    onDelete={onDelete}
-                    color={colorOf(a.employee_id)}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {displaySites.map((s) => siteCard(s, true))}
+        {isManager && emptySites.map((s) => siteCard(s, false))}
+      </div>
 
       {unassigned.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm font-semibold mb-2 text-orange-600">ללא שיבוץ ({unassigned.length})</p>
+            <p className="text-sm font-semibold mb-2 text-orange-600">
+              ללא שיבוץ ({unassigned.length}){isManager && " — גרור לאתר"}
+            </p>
             <div className="flex flex-wrap gap-2">
               {unassigned.map((e) => {
                 const c = colorOf(e.id);
@@ -659,7 +688,12 @@ function DailyView({
                   <Badge
                     key={e.id}
                     variant="outline"
-                    className={`text-xs ${c.text} ${c.border} ${isManager ? "cursor-pointer hover:bg-orange-50" : ""}`}
+                    draggable={isManager}
+                    onDragStart={() => setDragEmpId(e.id)}
+                    onDragEnd={() => { setDragEmpId(null); setDropSiteId(null); }}
+                    className={`text-xs ${c.text} ${c.border} ${
+                      isManager ? "cursor-grab active:cursor-grabbing hover:bg-orange-50" : ""
+                    } ${dragEmpId === e.id ? "opacity-50" : ""}`}
                     onClick={() => isManager && onAdd(dateStr)}
                   >
                     {e.full_name}
@@ -673,6 +707,7 @@ function DailyView({
     </div>
   );
 }
+
 
 // ─── Site View (GAP-017) ──────────────────────────────────────────────────────
 
