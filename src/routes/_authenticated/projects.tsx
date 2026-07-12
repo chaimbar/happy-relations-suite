@@ -447,6 +447,37 @@ function ProjectsPage() {
                       />
                     )}
                   </div>
+
+                  {/* Additions section */}
+                  <div className="mt-3 pt-3 border-t">
+                    <button
+                      className="w-full flex items-center justify-between text-sm font-medium hover:text-primary transition-colors"
+                      onClick={() => toggleAdditions(p.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>תוספות</span>
+                        {additions.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ({additions.length} · {fmt(additionsTotal)})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isManager && <span className="text-xs text-primary">+ הוסף</span>}
+                        {additionsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </div>
+                    </button>
+
+                    {additionsExpanded && (
+                      <AdditionsPanel
+                        siteId={p.id}
+                        additions={additions}
+                        isManager={isManager}
+                        isAdmin={isAdmin}
+                      />
+                    )}
+                  </div>
+
                 </CardContent>
               </Card>
             );
