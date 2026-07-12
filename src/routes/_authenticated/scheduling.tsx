@@ -417,7 +417,9 @@ type SharedViewProps = {
   onDelete: (id: string) => void;
   onMove: (id: string, newDate: string) => void;
   onAdd: (date?: string) => void;
+  onCreate: (employeeId: string, siteId: string, date: string) => void;
   colorOf: (empId: string) => ColorSwatch;
+
 };
 
 // ─── Assignment Card (reusable, draggable) ────────────────────────────────────
