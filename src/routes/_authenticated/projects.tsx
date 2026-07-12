@@ -147,12 +147,28 @@ function ProjectsPage() {
     },
   });
 
+  const { data: allAdditions = [] } = useQuery({
+    queryKey: ["all-additions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_additions").select("*").order("date", { ascending: false });
+      if (error) throw error;
+      return data as Addition[];
+    },
+  });
+
   const clientMap = new Map(clients.map((c) => [c.id, c.full_name]));
   const stagesBySite = new Map<string, Stage[]>();
   for (const s of allStages) {
     if (!stagesBySite.has(s.site_id)) stagesBySite.set(s.site_id, []);
     stagesBySite.get(s.site_id)!.push(s);
   }
+  const additionsBySite = new Map<string, Addition[]>();
+  for (const a of allAdditions) {
+    if (!additionsBySite.has(a.site_id)) additionsBySite.set(a.site_id, []);
+    additionsBySite.get(a.site_id)!.push(a);
+  }
+
 
   const deleteM = useMutation({
     mutationFn: async (id: string) => {
