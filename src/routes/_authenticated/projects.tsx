@@ -55,6 +55,23 @@ type Stage = {
   sort_order: number | null;
 };
 
+type Addition = {
+  id: string;
+  site_id: string;
+  description: string;
+  amount: number;
+  date: string;
+  status: "pending" | "approved" | "billed";
+  notes: string | null;
+};
+
+const ADDITION_STATUS: Record<Addition["status"], { label: string; color: string }> = {
+  pending:  { label: "ממתין",  color: "text-amber-600" },
+  approved: { label: "אושר",   color: "text-blue-600" },
+  billed:   { label: "חויב",   color: "text-green-600" },
+};
+
+
 type ClientLite = { id: string; full_name: string };
 
 const STATUS_LABEL: Record<Project["status"], { label: string; variant: "default" | "secondary" | "outline" }> = {
@@ -98,6 +115,8 @@ function ProjectsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set());
+  const [expandedAdditions, setExpandedAdditions] = useState<Set<string>>(new Set());
+
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
@@ -128,12 +147,28 @@ function ProjectsPage() {
     },
   });
 
+  const { data: allAdditions = [] } = useQuery({
+    queryKey: ["all-additions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_additions").select("*").order("date", { ascending: false });
+      if (error) throw error;
+      return data as Addition[];
+    },
+  });
+
   const clientMap = new Map(clients.map((c) => [c.id, c.full_name]));
   const stagesBySite = new Map<string, Stage[]>();
   for (const s of allStages) {
     if (!stagesBySite.has(s.site_id)) stagesBySite.set(s.site_id, []);
     stagesBySite.get(s.site_id)!.push(s);
   }
+  const additionsBySite = new Map<string, Addition[]>();
+  for (const a of allAdditions) {
+    if (!additionsBySite.has(a.site_id)) additionsBySite.set(a.site_id, []);
+    additionsBySite.get(a.site_id)!.push(a);
+  }
+
 
   const deleteM = useMutation({
     mutationFn: async (id: string) => {
@@ -161,6 +196,13 @@ function ProjectsPage() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  const toggleAdditions = (id: string) =>
+    setExpandedAdditions((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+
 
   return (
     <div className="space-y-5">
@@ -276,12 +318,16 @@ function ProjectsPage() {
         <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
           {filtered.map((p) => {
             const status = STATUS_LABEL[p.status];
-            const profitEstimate = Number(p.contract_price) - Number(p.materials_cost);
+            const additions = additionsBySite.get(p.id) ?? [];
+            const additionsTotal = additions.reduce((s, a) => s + Number(a.amount ?? 0), 0);
+            const profitEstimate = Number(p.contract_price) + additionsTotal - Number(p.materials_cost);
             const stages = stagesBySite.get(p.id) ?? [];
             const stagesExpanded = expandedStages.has(p.id);
+            const additionsExpanded = expandedAdditions.has(p.id);
             const completedStages = stages.filter((s) => s.status === "completed").length;
             const paidInStages = stages.reduce((s, st) =>
               st.status === "completed" ? s + Number(st.payment_amount ?? 0) : s, 0);
+
 
             return (
               <Card key={p.id} className="hover:shadow-md transition-shadow">
@@ -345,10 +391,16 @@ function ProjectsPage() {
                   </div>
 
                   {/* Financials */}
-                  <div className="mt-4 pt-3 border-t grid grid-cols-3 gap-2 text-sm">
+                  <div className="mt-4 pt-3 border-t grid grid-cols-4 gap-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-0.5">הכנסה</p>
+                      <p className="text-xs text-muted-foreground mb-0.5">חוזה</p>
                       <p className="font-semibold">{fmt(p.contract_price)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">תוספות</p>
+                      <p className={`font-semibold ${additionsTotal > 0 ? "text-blue-600" : ""}`}>
+                        {additionsTotal > 0 ? `+${fmt(additionsTotal)}` : "—"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">חומרים</p>
@@ -361,6 +413,7 @@ function ProjectsPage() {
                       </p>
                     </div>
                   </div>
+
 
                   {/* Stages section */}
                   <div className="mt-3 pt-3 border-t">
@@ -394,6 +447,37 @@ function ProjectsPage() {
                       />
                     )}
                   </div>
+
+                  {/* Additions section */}
+                  <div className="mt-3 pt-3 border-t">
+                    <button
+                      className="w-full flex items-center justify-between text-sm font-medium hover:text-primary transition-colors"
+                      onClick={() => toggleAdditions(p.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>תוספות</span>
+                        {additions.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ({additions.length} · {fmt(additionsTotal)})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isManager && <span className="text-xs text-primary">+ הוסף</span>}
+                        {additionsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </div>
+                    </button>
+
+                    {additionsExpanded && (
+                      <AdditionsPanel
+                        siteId={p.id}
+                        additions={additions}
+                        isManager={isManager}
+                        isAdmin={isAdmin}
+                      />
+                    )}
+                  </div>
+
                 </CardContent>
               </Card>
             );
@@ -805,3 +889,225 @@ function ProjectDialog({
     </DialogContent>
   );
 }
+
+// ── Additions Panel ──────────────────────────────────────────────────────────
+
+function AdditionsPanel({
+  siteId, additions, isManager, isAdmin,
+}: { siteId: string; additions: Addition[]; isManager: boolean; isAdmin: boolean }) {
+  const qc = useQueryClient();
+  const [addOpen, setAddOpen] = useState(false);
+  const [editAdd, setEditAdd] = useState<Addition | null>(null);
+
+  const cycleStatusM = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: Addition["status"] }) => {
+      const { error } = await supabase.from("site_additions").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["all-additions"] }),
+    onError: (e: Error) => toast.error("עדכון נכשל", { description: e.message }),
+  });
+
+  const deleteM = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("site_additions").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("תוספת נמחקה");
+      qc.invalidateQueries({ queryKey: ["all-additions"] });
+    },
+    onError: (e: Error) => toast.error("מחיקה נכשלה", { description: e.message }),
+  });
+
+  return (
+    <div className="mt-3 space-y-2">
+      {additions.length === 0 && (
+        <p className="text-xs text-muted-foreground text-center py-2">
+          אין תוספות — לחץ "הוסף" לחיוב נוסף מעבר לחוזה
+        </p>
+      )}
+      {additions.map((a) => {
+        const st = ADDITION_STATUS[a.status];
+        return (
+          <div key={a.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40 group">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium truncate">{a.description}</span>
+                {isManager ? (
+                  <button
+                    onClick={() => {
+                      const next: Addition["status"] = a.status === "pending" ? "approved"
+                        : a.status === "approved" ? "billed" : "pending";
+                      cycleStatusM.mutate({ id: a.id, status: next });
+                    }}
+                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded border border-current/30 ${st.color} hover:opacity-70 transition-opacity`}
+                    title="לחץ לשינוי סטטוס"
+                  >
+                    {st.label}
+                  </button>
+                ) : (
+                  <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${st.color} border-current/30`}>
+                    {st.label}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <DollarSign className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[11px] font-semibold">{fmt(a.amount)}</span>
+                <span className="text-[10px] text-muted-foreground">· {a.date}</span>
+                {a.notes && <span className="text-[10px] text-muted-foreground truncate">· {a.notes}</span>}
+              </div>
+            </div>
+            {isManager && (
+              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditAdd(a)}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                {isAdmin && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-6 w-6">
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent dir="rtl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>למחוק תוספת "{a.description}"?</AlertDialogTitle>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>ביטול</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteM.mutate(a.id)}>מחק</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {isManager && (
+        <Button
+          variant="outline" size="sm" className="w-full h-7 text-xs border-dashed"
+          onClick={() => setAddOpen(true)}
+        >
+          <Plus className="h-3 w-3 ml-1" /> הוסף תוספת
+        </Button>
+      )}
+
+      <AdditionDialog
+        open={addOpen || !!editAdd}
+        siteId={siteId}
+        editing={editAdd}
+        onClose={() => { setAddOpen(false); setEditAdd(null); }}
+      />
+    </div>
+  );
+}
+
+// ── Addition Dialog ──────────────────────────────────────────────────────────
+
+function AdditionDialog({
+  open, siteId, editing, onClose,
+}: { open: boolean; siteId: string; editing: Addition | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({
+    description: editing?.description ?? "",
+    amount: editing?.amount != null ? editing.amount.toString() : "",
+    date: editing?.date ?? new Date().toISOString().slice(0, 10),
+    status: (editing?.status ?? "pending") as Addition["status"],
+    notes: editing?.notes ?? "",
+  });
+
+  useEffect(() => {
+    setForm({
+      description: editing?.description ?? "",
+      amount: editing?.amount != null ? editing.amount.toString() : "",
+      date: editing?.date ?? new Date().toISOString().slice(0, 10),
+      status: (editing?.status ?? "pending") as Addition["status"],
+      notes: editing?.notes ?? "",
+    });
+  }, [editing]);
+
+  const saveM = useMutation({
+    mutationFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const payload = {
+        description: form.description.trim(),
+        amount: form.amount === "" ? 0 : Number(form.amount),
+        date: form.date,
+        status: form.status,
+        notes: form.notes.trim() || null,
+      };
+      if (editing) {
+        const { error } = await supabase.from("site_additions").update(payload).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("site_additions").insert({
+          ...payload, site_id: siteId, user_id: u.user!.id, created_by: u.user!.id,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editing ? "תוספת עודכנה" : "תוספת נוספה");
+      qc.invalidateQueries({ queryKey: ["all-additions"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error("שמירה נכשלה", { description: e.message }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{editing ? "עריכת תוספת" : "תוספת חדשה"}</DialogTitle>
+          <DialogDescription>חיוב נוסף מעבר לסכום החוזה המקורי</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={(e) => { e.preventDefault(); saveM.mutate(); }} className="space-y-4">
+          <div className="space-y-2">
+            <Label>תיאור *</Label>
+            <Input required placeholder='למשל: "תוספת חדר אמבטיה"' value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>סכום (₪) *</Label>
+              <Input type="number" required min="0" step="any" value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>תאריך</Label>
+              <Input type="date" value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>סטטוס</Label>
+            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Addition["status"] })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">ממתין</SelectItem>
+                <SelectItem value="approved">אושר</SelectItem>
+                <SelectItem value="billed">חויב</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>הערות</Label>
+            <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>ביטול</Button>
+            <Button type="submit" disabled={saveM.isPending || !form.description.trim()}>
+              {saveM.isPending ? "שומר..." : editing ? "עדכן" : "הוסף"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

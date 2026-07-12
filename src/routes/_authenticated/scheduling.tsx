@@ -83,7 +83,9 @@ function SchedulingPage() {
   const { isManager } = useAuth();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
-  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee">("weekly");
+  const [activeView, setActiveView] = useState<"weekly" | "daily" | "bysite" | "byemployee" | "history">("weekly");
+  const [bulkOpen, setBulkOpen] = useState(false);
+
   const [addDialog, setAddDialog] = useState<{ open: boolean; date?: string }>({ open: false });
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterSite, setFilterSite] = useState("all");
@@ -161,6 +163,28 @@ function SchedulingPage() {
     onError: (e: Error) => toast.error("שגיאה בהזזה", { description: e.message }),
   });
 
+  const createFromDragM = useMutation({
+    mutationFn: async ({ employeeId, siteId, date }: { employeeId: string; siteId: string; date: string }) => {
+      const emp = employees.find((e) => e.id === employeeId);
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from("assignments").insert({
+        employee_id: employeeId,
+        site_id: siteId,
+        date,
+        shift_type: "full",
+        cost_estimated: emp?.daily_cost_estimated ?? 0,
+        user_id: u.user!.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("שיבוץ נוסף");
+      qc.invalidateQueries({ queryKey: ["assignments"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+    onError: (e: Error) => toast.error("שגיאה בשיבוץ", { description: e.message }),
+  });
+
   const filtered = assignments.filter((a) => {
     if (filterEmployee !== "all" && a.employee_id !== filterEmployee) return false;
     if (filterSite !== "all" && a.site_id !== filterSite) return false;
@@ -190,8 +214,11 @@ function SchedulingPage() {
     onDelete: (id: string) => deleteM.mutate(id),
     onMove: (id: string, newDate: string) => moveM.mutate({ id, newDate }),
     onAdd: (date?: string) => setAddDialog({ open: true, date }),
+    onCreate: (employeeId: string, siteId: string, date: string) =>
+      createFromDragM.mutate({ employeeId, siteId, date }),
     colorOf,
   };
+
 
   return (
     <div className="space-y-5">
@@ -246,10 +273,16 @@ function SchedulingPage() {
             </SelectContent>
           </Select>
           {isManager && (
-            <Button size="sm" onClick={() => setAddDialog({ open: true })}>
-              <Plus className="h-4 w-4 ml-1" /> שיבוץ חדש
-            </Button>
+            <>
+              <Button size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
+                <Users className="h-4 w-4 ml-1" /> שבץ את כולם
+              </Button>
+              <Button size="sm" onClick={() => setAddDialog({ open: true })}>
+                <Plus className="h-4 w-4 ml-1" /> שיבוץ חדש
+              </Button>
+            </>
           )}
+
         </div>
       </div>
 
@@ -308,6 +341,7 @@ function SchedulingPage() {
           <TabsTrigger value="daily">יומי</TabsTrigger>
           <TabsTrigger value="bysite">לפי אתר</TabsTrigger>
           <TabsTrigger value="byemployee">לפי עובד</TabsTrigger>
+          <TabsTrigger value="history">היסטוריה</TabsTrigger>
         </TabsList>
 
         <TabsContent value="weekly" className="mt-0">
@@ -321,6 +355,9 @@ function SchedulingPage() {
         </TabsContent>
         <TabsContent value="byemployee" className="mt-0">
           <EmployeeView {...sharedProps} />
+        </TabsContent>
+        <TabsContent value="history" className="mt-0">
+          <HistoryView colorOf={colorOf} isManager={isManager} onDelete={(id) => deleteM.mutate(id)} />
         </TabsContent>
       </Tabs>
 
@@ -354,6 +391,16 @@ function SchedulingPage() {
         onClose={() => setAddDialog({ open: false })}
         onSuccess={invalidateAll}
       />
+
+      <BulkAssignDialog
+        open={bulkOpen}
+        employees={employees}
+        sites={sites}
+        existingAssignments={assignments}
+        onClose={() => setBulkOpen(false)}
+        onSuccess={invalidateAll}
+      />
+
     </div>
   );
 }
@@ -370,7 +417,9 @@ type SharedViewProps = {
   onDelete: (id: string) => void;
   onMove: (id: string, newDate: string) => void;
   onAdd: (date?: string) => void;
+  onCreate: (employeeId: string, siteId: string, date: string) => void;
   colorOf: (empId: string) => ColorSwatch;
+
 };
 
 // ─── Assignment Card (reusable, draggable) ────────────────────────────────────
@@ -520,21 +569,75 @@ function WeeklyView({ assignments, employees, days, isManager, onDelete, onMove,
 // ─── Daily View (GAP-009) ─────────────────────────────────────────────────────
 
 function DailyView({
-  assignments, employees, sites, isManager, onDelete, onAdd, onMove, colorOf, selectedDay, onDayChange,
+  assignments, employees, sites, isManager, onDelete, onAdd, onMove, onCreate, colorOf, selectedDay, onDayChange,
 }: SharedViewProps & { selectedDay: Date; onDayChange: (d: Date) => void }) {
   const dateStr = format(selectedDay, "yyyy-MM-dd");
   const isToday = isSameDay(selectedDay, new Date());
   const dayAssignments = assignments.filter((a) => a.date === dateStr);
+
+  const [dragEmpId, setDragEmpId] = useState<string | null>(null);
+  const [dropSiteId, setDropSiteId] = useState<string | null>(null);
 
   const bySite: Record<string, Assignment[]> = {};
   for (const a of dayAssignments) {
     if (!bySite[a.site_id]) bySite[a.site_id] = [];
     bySite[a.site_id].push(a);
   }
-  const activeSites = sites.filter((s) => (bySite[s.id]?.length ?? 0) > 0);
+  // All active sites (not only those with existing assignments) to allow dropping onto empty sites too
+  const displaySites = sites.filter((s) => (bySite[s.id]?.length ?? 0) > 0);
+  const emptySites = sites.filter((s) => !(bySite[s.id]?.length));
 
   const assignedIds = new Set(dayAssignments.map((a) => a.employee_id));
   const unassigned = employees.filter((e) => !assignedIds.has(e.id));
+
+  const handleDropOnSite = (siteId: string) => {
+    if (!dragEmpId) return;
+    // don't duplicate
+    if (dayAssignments.some((a) => a.employee_id === dragEmpId && a.site_id === siteId)) {
+      toast.info("העובד כבר משובץ באתר הזה היום");
+    } else {
+      onCreate(dragEmpId, siteId, dateStr);
+    }
+    setDragEmpId(null);
+    setDropSiteId(null);
+  };
+
+  const siteCard = (s: Site, hasAssignments: boolean) => {
+    const isDropTarget = dropSiteId === s.id;
+    return (
+      <Card
+        key={s.id}
+        onDragOver={(e) => { if (dragEmpId) { e.preventDefault(); setDropSiteId(s.id); } }}
+        onDragLeave={() => setDropSiteId(null)}
+        onDrop={() => handleDropOnSite(s.id)}
+        className={isDropTarget ? "border-blue-400 ring-2 ring-blue-200 bg-blue-50/50" : ""}
+      >
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-emerald-500" />
+            {s.name}
+            <Badge variant="secondary" className="text-xs mr-auto">{bySite[s.id]?.length ?? 0}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-2">
+          {(bySite[s.id] ?? []).map((a) => (
+            <AssignmentCard
+              key={a.id}
+              a={a}
+              isManager={isManager}
+              onDelete={onDelete}
+              color={colorOf(a.employee_id)}
+            />
+          ))}
+          {!hasAssignments && (
+            <div className="text-[11px] text-muted-foreground text-center py-3 border-2 border-dashed border-border/60 rounded-lg">
+              {dragEmpId ? "שחרר כאן לשיבוץ" : "גרור עובד לכאן"}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -554,55 +657,30 @@ function DailyView({
 
       <div className="flex items-center gap-3 flex-wrap">
         <Badge variant="outline">{dayAssignments.length} שיבוצים</Badge>
-        <Badge variant="outline">{activeSites.length} אתרים</Badge>
+        <Badge variant="outline">{displaySites.length} אתרים</Badge>
         {isManager && (
           <Button size="sm" onClick={() => onAdd(dateStr)}>
             <Plus className="h-4 w-4 ml-1" /> הוסף שיבוץ
           </Button>
         )}
+        {isManager && (
+          <span className="text-xs text-muted-foreground">
+            💡 גרור עובד מ"ללא שיבוץ" לכרטיס אתר
+          </span>
+        )}
       </div>
 
-      {dayAssignments.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          <Calendar className="h-8 w-8 mx-auto mb-3 opacity-30" />
-          <p>אין שיבוצים ליום זה</p>
-          {isManager && (
-            <Button variant="outline" size="sm" className="mt-3" onClick={() => onAdd(dateStr)}>
-              הוסף שיבוץ ראשון
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {activeSites.map((s) => (
-            <Card key={s.id}>
-              <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-emerald-500" />
-                  {s.name}
-                  <Badge variant="secondary" className="text-xs mr-auto">{bySite[s.id].length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-2">
-                {bySite[s.id].map((a) => (
-                  <AssignmentCard
-                    key={a.id}
-                    a={a}
-                    isManager={isManager}
-                    onDelete={onDelete}
-                    color={colorOf(a.employee_id)}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {displaySites.map((s) => siteCard(s, true))}
+        {isManager && emptySites.map((s) => siteCard(s, false))}
+      </div>
 
       {unassigned.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm font-semibold mb-2 text-orange-600">ללא שיבוץ ({unassigned.length})</p>
+            <p className="text-sm font-semibold mb-2 text-orange-600">
+              ללא שיבוץ ({unassigned.length}){isManager && " — גרור לאתר"}
+            </p>
             <div className="flex flex-wrap gap-2">
               {unassigned.map((e) => {
                 const c = colorOf(e.id);
@@ -610,7 +688,12 @@ function DailyView({
                   <Badge
                     key={e.id}
                     variant="outline"
-                    className={`text-xs ${c.text} ${c.border} ${isManager ? "cursor-pointer hover:bg-orange-50" : ""}`}
+                    draggable={isManager}
+                    onDragStart={() => setDragEmpId(e.id)}
+                    onDragEnd={() => { setDragEmpId(null); setDropSiteId(null); }}
+                    className={`text-xs ${c.text} ${c.border} ${
+                      isManager ? "cursor-grab active:cursor-grabbing hover:bg-orange-50" : ""
+                    } ${dragEmpId === e.id ? "opacity-50" : ""}`}
                     onClick={() => isManager && onAdd(dateStr)}
                   >
                     {e.full_name}
@@ -624,6 +707,7 @@ function DailyView({
     </div>
   );
 }
+
 
 // ─── Site View (GAP-017) ──────────────────────────────────────────────────────
 
@@ -933,3 +1017,206 @@ function AddAssignmentDialog({
     </Dialog>
   );
 }
+
+// ─── History View ──────────────────────────────────────────────────────────
+
+function HistoryView({
+  colorOf, isManager, onDelete,
+}: {
+  colorOf: (id: string) => ColorSwatch;
+  isManager: boolean;
+  onDelete: (id: string) => void;
+}) {
+  const [range, setRange] = useState<"30" | "90" | "365">("90");
+  const from = format(addDays(new Date(), -Number(range)), "yyyy-MM-dd");
+  const to = format(addDays(new Date(), -1), "yyyy-MM-dd");
+
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["assignments-history", from, to],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assignments")
+        .select("*, employees(full_name), sites(name)")
+        .gte("date", from)
+        .lte("date", to)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data as Assignment[];
+    },
+  });
+
+  const byDate: Record<string, Assignment[]> = {};
+  for (const a of data) {
+    (byDate[a.date] ||= []).push(a);
+  }
+  const dates = Object.keys(byDate).sort((a, b) => (a < b ? 1 : -1));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Select value={range} onValueChange={(v) => setRange(v as typeof range)}>
+          <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="30">30 ימים אחרונים</SelectItem>
+            <SelectItem value="90">90 ימים אחרונים</SelectItem>
+            <SelectItem value="365">שנה אחרונה</SelectItem>
+          </SelectContent>
+        </Select>
+        <Badge variant="outline">{data.length} שיבוצים</Badge>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground text-center py-6">טוען...</p>
+      ) : dates.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground">
+          <Calendar className="h-8 w-8 mx-auto mb-3 opacity-30" />
+          <p>אין שיבוצים היסטוריים בטווח הזה</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {dates.map((d) => (
+            <Card key={d}>
+              <CardHeader className="py-2 px-4">
+                <CardTitle className="text-sm">
+                  {format(new Date(d), "EEEE, d MMMM yyyy", { locale: he })}
+                  <Badge variant="secondary" className="mr-2 text-xs">{byDate[d].length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                {byDate[d].map((a) => (
+                  <AssignmentCard
+                    key={a.id}
+                    a={a}
+                    isManager={isManager}
+                    onDelete={onDelete}
+                    color={colorOf(a.employee_id)}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Bulk Assign Dialog ────────────────────────────────────────────────────
+
+function BulkAssignDialog({
+  open, employees, sites, existingAssignments, onClose, onSuccess,
+}: {
+  open: boolean;
+  employees: Employee[];
+  sites: Site[];
+  existingAssignments: Assignment[];
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [siteId, setSiteId] = useState("");
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [shift, setShift] = useState<"full" | "morning" | "afternoon">("full");
+  const [skipAssigned, setSkipAssigned] = useState(true);
+
+  useEffect(() => {
+    if (open) {
+      setSiteId("");
+      setDate(format(new Date(), "yyyy-MM-dd"));
+      setShift("full");
+      setSkipAssigned(true);
+    }
+  }, [open]);
+
+  const targetIds = employees
+    .filter((e) => !skipAssigned || !existingAssignments.some((a) => a.employee_id === e.id && a.date === date))
+    .map((e) => e.id);
+
+  const alreadyCount = employees.length - targetIds.length;
+
+  const saveM = useMutation({
+    mutationFn: async () => {
+      if (!siteId) throw new Error("בחר אתר");
+      if (targetIds.length === 0) throw new Error("אין עובדים לשבץ");
+      const { data: u } = await supabase.auth.getUser();
+      const rows = targetIds.map((eid) => {
+        const emp = employees.find((e) => e.id === eid);
+        return {
+          employee_id: eid,
+          site_id: siteId,
+          date,
+          shift_type: shift,
+          cost_estimated: emp?.daily_cost_estimated ?? 0,
+          user_id: u.user!.id,
+        };
+      });
+      const { error } = await supabase.from("assignments").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`שובצו ${targetIds.length} עובדים`);
+      onSuccess();
+      onClose();
+    },
+    onError: (e: Error) => toast.error("שגיאה", { description: e.message }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>שבץ את כל העובדים</DialogTitle>
+          <DialogDescription>שיבוץ קבוצתי של כל העובדים הפעילים לאתר בתאריך אחד</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={(e) => { e.preventDefault(); saveM.mutate(); }} className="space-y-4">
+          <div className="space-y-2">
+            <Label>אתר *</Label>
+            <Select value={siteId} onValueChange={setSiteId}>
+              <SelectTrigger><SelectValue placeholder="בחר אתר" /></SelectTrigger>
+              <SelectContent>
+                {sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>תאריך *</Label>
+            <input
+              type="date" required value={date} onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>סוג משמרת</Label>
+            <Select value={shift} onValueChange={(v) => setShift(v as typeof shift)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full">מלאה</SelectItem>
+                <SelectItem value="morning">בוקר</SelectItem>
+                <SelectItem value="afternoon">אחה"צ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox" checked={skipAssigned}
+              onChange={(e) => setSkipAssigned(e.target.checked)}
+            />
+            דלג על עובדים שכבר משובצים היום
+          </label>
+          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+            <div className="font-semibold text-blue-800">ישובצו: {targetIds.length} עובדים</div>
+            {alreadyCount > 0 && (
+              <div className="text-xs text-blue-600 mt-0.5">{alreadyCount} כבר משובצים ויידלגו</div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>ביטול</Button>
+            <Button type="submit" disabled={saveM.isPending || !siteId || targetIds.length === 0}>
+              {saveM.isPending ? "משבץ..." : `שבץ ${targetIds.length}`}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
